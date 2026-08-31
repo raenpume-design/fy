@@ -587,3 +587,63 @@ function filtrarMovimientos() {
         container.innerHTML = filtrados.map(t => generarHTMLMovimiento(t)).join('');
     }
 }
+
+/* CARGA Y FILTRADO REVISADO */
+async function cargarDatos() {
+    if (SUPABASE_URL.includes("TU_SUPABASE")) return;
+
+    const { data: resCuentas } = await db.from('cuentas').select('*');
+    const { data: resBolsillos } = await db.from('bolsillos').select('*');
+    const { data: resProy } = await db.from('proyecciones').select('*').order('fecha', { ascending: true });
+    const { data: resTx } = await db.from('transacciones').select('*, cuentas(nombre), bolsillos(nombre)').order('fecha', { ascending: false });
+
+    cuentas = resCuentas || [];
+    bolsillos = resBolsillos || [];
+    proyecciones = resProy || [];
+    todasLasTransacciones = resTx || [];
+
+    renderizarCuentas();
+    renderizarBolsillos();
+    renderizarProyecciones();
+    renderizarTransacciones(todasLasTransacciones.slice(0, 5));
+    renderFiltroCuentasPills();
+    actualizarSaldosGlobales();
+}
+
+function filtrarMovimientos() {
+    const busqueda = (document.getElementById('filter-search')?.value || '').toLowerCase();
+    const now = new Date();
+    const currentYear = now.getUTCFullYear();
+    const currentMonth = now.getUTCMonth();
+
+    const filtrados = todasLasTransacciones.filter(t => {
+        const conceptoMatch = t.concepto.toLowerCase().includes(busqueda);
+        const tipoMatch = !filtroTipoVal || t.tipo === filtroTipoVal;
+        const cuentaMatch = !filtroCuentaVal || t.cuenta_id === filtroCuentaVal;
+
+        let fechaMatch = true;
+        if (t.fecha) {
+            const txDate = new Date(t.fecha);
+            if (filtroFechaVal === 'este_mes') {
+                fechaMatch = txDate.getUTCFullYear() === currentYear && txDate.getUTCMonth() === currentMonth;
+            } else if (filtroFechaVal === 'mes_pasado') {
+                const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+                const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+                fechaMatch = txDate.getUTCFullYear() === lastMonthYear && txDate.getUTCMonth() === lastMonth;
+            }
+        }
+
+        return conceptoMatch && tipoMatch && cuentaMatch && fechaMatch;
+    });
+
+    const cantElem = document.getElementById('cant-movimientos');
+    if (cantElem) cantElem.innerText = `${filtrados.length} movimientos`;
+
+    const container = document.getElementById('lista-movimientos-completa');
+    if (!container) return;
+    if (!filtrados.length) {
+        container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin movimientos para estos filtros.</p>';
+    } else {
+        container.innerHTML = filtrados.map(t => generarHTMLMovimiento(t)).join('');
+    }
+}
