@@ -1,0 +1,17 @@
+{
+  "name": "Mis Finanzas Personales",
+  "short_name": "Finanzas",
+  "description": "Control de finanzas, cuentas, tarjetas y bolsillos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2845/2845731.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
