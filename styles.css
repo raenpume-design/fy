@@ -19,6 +19,7 @@ body { background-color: var(--bg); color: var(--text); padding-bottom: 5rem; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .card-dark { background: var(--primary); color: white; padding: 1rem; border-radius: 1rem; }
@@ -27,11 +28,21 @@ body { background-color: var(--bg); color: var(--text); padding-bottom: 5rem; }
 .val { font-size: 1.4rem; font-weight: 800; margin-top: 0.25rem; }
 .sub { font-size: 0.75rem; opacity: 0.8; }
 
-.btn-action { border: none; color: white; font-weight: 700; padding: 0.75rem 0.25rem; border-radius: 0.75rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; font-size: 0.75rem; }
+.btn-action { border: none; color: white; font-weight: 700; padding: 0.65rem 0.2rem; border-radius: 0.75rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; font-size: 0.7rem; }
 .btn-ingreso { background: var(--success); }
 .btn-egreso { background: var(--danger); }
 .btn-bolsillo { background: var(--accent); }
 .btn-proyectado { background: #8b5cf6; }
+.btn-prestamo { background: #d97706; }
+
+.period-container { display: flex; flex-direction: column; gap: 0.4rem; }
+.period-select { background: #f1f5f9; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.35rem 0.6rem; font-size: 0.75rem; font-weight: 700; color: var(--primary); outline: none; cursor: pointer; }
+.period-pills { display: flex; gap: 0.35rem; }
+.period-pill { flex: 1; border: 1px solid var(--border); background: #f8fafc; color: var(--subtext); padding: 0.35rem 0.2rem; border-radius: 0.5rem; font-size: 0.68rem; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.15s ease; }
+.period-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+.badge-prestamo-pendiente { background: #fef3c7; color: #b45309; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+.badge-prestamo-cobrado { background: #dcfce7; color: #15803d; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
 
 .btn-option { border: 1px solid var(--border); background: #f1f5f9; padding: 0.6rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; text-align: center; }
 .btn-option.selected { background: var(--primary); color: white; border-color: var(--primary); }
