@@ -17,10 +17,28 @@ let filtroCuentaActual = 'todas';
 /* FORMATOS */
 function getTodayString() { return new Date().toISOString().split('T')[0]; }
 
+function getLocalDateParts(fechaStr) {
+    if (!fechaStr) return null;
+    if (typeof fechaStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) {
+        const [y, m, d] = fechaStr.split('-').map(Number);
+        return { year: y, month: m - 1, day: d };
+    }
+    const date = new Date(fechaStr);
+    if (isNaN(date.getTime())) return null;
+    return {
+        year: date.getFullYear(),
+        month: date.getMonth(),
+        day: date.getDate()
+    };
+}
+
 function formatDateDisplay(fechaStr) {
     if (!fechaStr) return '';
-    const date = new Date(fechaStr);
-    return date.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+    const parts = getLocalDateParts(fechaStr);
+    if (!parts) return fechaStr;
+    const d = String(parts.day).padStart(2, '0');
+    const m = String(parts.month + 1).padStart(2, '0');
+    return `${d}/${m}/${parts.year}`;
 }
 
 function formatMoney(monto) {
@@ -67,7 +85,6 @@ async function cargarDatos() {
 
     const { data: resCuentas } = await db.from('cuentas').select('*');
     const { data: resBolsillos } = await db.from('bolsillos').select('*');
-    // Ahora traemos el nombre de la cuenta asociada a la proyección
     const { data: resProy } = await db.from('proyecciones').select('*, cuentas(nombre, tipo)').order('fecha', { ascending: true });
     const { data: resTx } = await db.from('transacciones').select('*, cuentas(nombre), bolsillos(nombre)').order('fecha', { ascending: false });
 
@@ -86,9 +103,11 @@ async function cargarDatos() {
 
 function generarBotonesFiltroCuentas() {
     const container = document.getElementById('filter-cuentas-container');
-    let html = `<button class="filter-btn active" id="f-cuenta-todas" onclick="setFiltroCuenta('todas')">Todas</button>`;
+    if (!container) return;
+    let html = `<button class="filter-btn ${filtroCuentaActual === 'todas' ? 'active' : ''}" id="f-cuenta-todas" onclick="setFiltroCuenta('todas')">Todas</button>`;
     cuentas.forEach(c => {
-        html += `<button class="filter-btn" id="f-cuenta-${c.id}" onclick="setFiltroCuenta('${c.id}')">${c.nombre}</button>`;
+        const isActive = filtroCuentaActual === c.id ? 'active' : '';
+        html += `<button class="filter-btn ${isActive}" id="f-cuenta-${c.id}" onclick="setFiltroCuenta('${c.id}')">${c.nombre}</button>`;
     });
     container.innerHTML = html;
 }
@@ -163,17 +182,23 @@ function renderizarProyecciones() {
 
 function generarHTMLMovimiento(t) {
     const esIngreso = t.tipo === 'ingreso';
-    const color = esIngreso ? 'var(--success)' : 'var(--danger)';
+    const esAhorro = t.tipo === 'ahorro';
+    const color = esIngreso ? 'var(--success)' : (esAhorro ? 'var(--accent)' : 'var(--danger)');
     const signo = esIngreso ? '+' : '-';
+    
+    const cuentaNombre = t.cuentas?.nombre || cuentas.find(c => c.id === t.cuenta_id)?.nombre || 'Cuenta';
+    const bolsilloNombre = t.bolsillos?.nombre || bolsillos.find(b => b.id === t.bolsillo_id)?.nombre || '';
+    const detalle = bolsilloNombre ? `${cuentaNombre} ➔ 🎯 ${bolsilloNombre}` : cuentaNombre;
+
     return `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;">
             <div>
-                <p style="font-weight: 600;">${t.concepto}</p>
-                <p style="font-size: 0.7rem; color: var(--subtext);">${formatDateDisplay(t.fecha)} • ${t.cuentas?.nombre || 'Cuenta'} ${t.bolsillos ? `➔ ${t.bolsillos.nombre}` : ''}</p>
+                <p style="font-weight: 600;">${t.concepto || 'Sin concepto'}</p>
+                <p style="font-size: 0.7rem; color: var(--subtext); margin-top: 2px;">${formatDateDisplay(t.fecha)} • ${detalle}</p>
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <span style="font-weight: 700; color: ${color};">${signo}${formatMoney(t.monto)}</span>
-                <button onclick="eliminarTransaccion('${t.id}', '${t.tipo}', ${t.monto}, '${t.cuenta_id}', '${t.bolsillo_id || ''}')" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.8rem;">🗑️</button>
+                <button onclick="eliminarTransaccion('${t.id}', '${t.tipo}', ${t.monto}, '${t.cuenta_id}', '${t.bolsillo_id || ''}')" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.85rem; padding: 4px;" title="Eliminar movimiento">🗑️</button>
             </div>
         </div>
     `;
@@ -193,16 +218,15 @@ function actualizarSaldosGlobales() {
         const cuenta = cuentas.find(c => c.id === p.cuenta_id);
         if (cuenta) {
             if (cuenta.tipo === 'credito') {
-                if (p.tipo === 'egreso') deudaProyectada += Number(p.monto); // Comprar algo con TC sube la deuda
-                if (p.tipo === 'ingreso') deudaProyectada -= Number(p.monto); // Pagar la TC baja la deuda
+                if (p.tipo === 'egreso') deudaProyectada += Number(p.monto);
+                if (p.tipo === 'ingreso') deudaProyectada -= Number(p.monto);
             } else {
-                if (p.tipo === 'ingreso') dispProyectado += Number(p.monto); // Ingreso a débito suma saldo
-                if (p.tipo === 'egreso') dispProyectado -= Number(p.monto);  // Egreso a débito resta saldo
+                if (p.tipo === 'ingreso') dispProyectado += Number(p.monto);
+                if (p.tipo === 'egreso') dispProyectado -= Number(p.monto);
             }
         }
     });
 
-    // Asegurar que la deuda no se vuelva negativa visualmente
     if (deudaProyectada < 0) deudaProyectada = 0;
 
     // 3. Pintar en pantalla
@@ -215,49 +239,74 @@ function actualizarSaldosGlobales() {
 /* FILTROS EXCLUSIVOS DEL MÓDULO MOVIMIENTOS */
 function setFiltroFecha(fecha) {
     filtroFechaActual = fecha;
-    ['todas', 'hoy', 'mes'].forEach(f => document.getElementById(`f-fecha-${f}`).classList.remove('active'));
-    document.getElementById(`f-fecha-${fecha}`).classList.add('active');
+    ['todas', 'hoy', 'mes'].forEach(f => {
+        const el = document.getElementById(`f-fecha-${f}`);
+        if (el) el.classList.remove('active');
+    });
+    const targetEl = document.getElementById(`f-fecha-${fecha}`);
+    if (targetEl) targetEl.classList.add('active');
     filtrarMovimientos();
 }
 
 function setFiltroTipo(tipo) {
     filtroTipoActual = tipo;
-    ['todos', 'ingreso', 'egreso', 'ahorro'].forEach(t => document.getElementById(`f-tipo-${t}`).classList.remove('active'));
-    document.getElementById(`f-tipo-${tipo}`).classList.add('active');
+    ['todos', 'ingreso', 'egreso', 'ahorro'].forEach(t => {
+        const el = document.getElementById(`f-tipo-${t}`);
+        if (el) el.classList.remove('active');
+    });
+    const targetEl = document.getElementById(`f-tipo-${tipo}`);
+    if (targetEl) targetEl.classList.add('active');
     filtrarMovimientos();
 }
 
 function setFiltroCuenta(id) {
     filtroCuentaActual = id;
     document.querySelectorAll('#filter-cuentas-container .filter-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`f-cuenta-${id}`).classList.add('active');
+    const targetBtn = document.getElementById(`f-cuenta-${id}`);
+    if (targetBtn) targetBtn.classList.add('active');
     filtrarMovimientos();
 }
 
 function filtrarMovimientos() {
-    const busqueda = document.getElementById('filter-search').value.toLowerCase().trim();
+    const inputSearch = document.getElementById('filter-search');
+    const busqueda = (inputSearch?.value || '').toLowerCase().trim();
     
+    const hoy = new Date();
+    const hoyYear = hoy.getFullYear();
+    const hoyMonth = hoy.getMonth();
+    const hoyDay = hoy.getDate();
+
     const filtrados = todasLasTransacciones.filter(t => {
-        const busquedaMatch = t.concepto.toLowerCase().includes(busqueda) || t.monto.toString().includes(busqueda);
+        const concepto = (t.concepto || '').toLowerCase();
+        const montoStr = (t.monto ?? '').toString();
+        const busquedaMatch = !busqueda || concepto.includes(busqueda) || montoStr.includes(busqueda);
         const tipoMatch = filtroTipoActual === 'todos' || t.tipo === filtroTipoActual;
         const cuentaMatch = filtroCuentaActual === 'todas' || t.cuenta_id === filtroCuentaActual;
         
         let fechaMatch = true;
-        if (t.fecha) {
-            const txDate = new Date(t.fecha);
-            const hoy = new Date();
-            if (filtroFechaActual === 'hoy') {
-                if (txDate.toISOString().split('T')[0] !== hoy.toISOString().split('T')[0]) fechaMatch = false;
+        if (filtroFechaActual !== 'todas') {
+            const txParts = getLocalDateParts(t.fecha);
+            if (!txParts) {
+                fechaMatch = false;
+            } else if (filtroFechaActual === 'hoy') {
+                fechaMatch = (txParts.year === hoyYear && txParts.month === hoyMonth && txParts.day === hoyDay);
             } else if (filtroFechaActual === 'mes') {
-                if (txDate.getMonth() !== hoy.getMonth() || txDate.getFullYear() !== hoy.getFullYear()) fechaMatch = false;
+                fechaMatch = (txParts.year === hoyYear && txParts.month === hoyMonth);
             }
         }
         return busquedaMatch && tipoMatch && cuentaMatch && fechaMatch;
     });
 
+    const countEl = document.getElementById('movimientos-count');
+    if (countEl) {
+        countEl.innerText = `${filtrados.length} movimiento${filtrados.length === 1 ? '' : 's'}`;
+    }
+
     const container = document.getElementById('lista-movimientos-completa');
+    if (!container) return;
+
     if (!filtrados.length) {
-        container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">No hay movimientos que coincidan con los filtros.</p>';
+        container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext); text-align: center; padding: 1.5rem 0;">No hay movimientos que coincidan con los filtros.</p>';
     } else {
         container.innerHTML = filtrados.map(t => generarHTMLMovimiento(t)).join('');
     }
@@ -386,15 +435,20 @@ async function guardarTransaccion(e) {
     await db.from('transacciones').insert([{ tipo, monto, concepto, cuenta_id, bolsillo_id, fecha }]);
 
     const cuenta = cuentas.find(c => c.id === cuenta_id);
-    if (tipo === 'ingreso') {
-        await db.from('cuentas').update({ saldo_actual: Number(cuenta.saldo_actual) + monto }).eq('id', cuenta_id);
-    } else if (tipo === 'egreso' || tipo === 'ahorro') {
-        const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) + monto : Number(cuenta.saldo_actual) - monto;
-        await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
-        
-        if (tipo === 'ahorro' && bolsillo_id) {
-            const bol = bolsillos.find(b => b.id === bolsillo_id);
-            await db.from('bolsillos').update({ saldo_actual: Number(bol.saldo_actual) + monto }).eq('id', bolsillo_id);
+    if (cuenta) {
+        if (tipo === 'ingreso') {
+            const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) - monto : Number(cuenta.saldo_actual) + monto;
+            await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
+        } else if (tipo === 'egreso' || tipo === 'ahorro') {
+            const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) + monto : Number(cuenta.saldo_actual) - monto;
+            await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
+            
+            if (tipo === 'ahorro' && bolsillo_id) {
+                const bol = bolsillos.find(b => b.id === bolsillo_id);
+                if (bol) {
+                    await db.from('bolsillos').update({ saldo_actual: Number(bol.saldo_actual) + monto }).eq('id', bolsillo_id);
+                }
+            }
         }
     }
     cerrarModal('modal-transaccion');
