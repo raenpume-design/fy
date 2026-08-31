@@ -58,3 +58,10 @@ body { background-color: var(--bg); color: var(--text); padding-bottom: 5rem; }
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--surface); border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 50; }
 .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.75rem; font-weight: 600; color: var(--subtext); cursor: pointer; width: 50%; padding: 8px 0; }
 .nav-btn.active { color: var(--accent); font-weight: 800; }
+
+/* Filtros estilo Pills (Botones táctiles) */
+.filter-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.filter-label { font-size: 0.7rem; font-weight: 700; color: var(--subtext); text-transform: uppercase; }
+.pill-container { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.pill-btn { border: 1px solid var(--border); background: #f1f5f9; color: var(--text); padding: 0.4rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.pill-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
