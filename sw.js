@@ -1,50 +1,34 @@
-const CACHE_NAME = 'mi-app-cache-v1';
-const urlsToCache = [
-    '/',
-    '/index.html',
-    '/styles.css',
-    '/app.js',
-    '/manifest.json'
+const CACHE_NAME = 'finanzas-app-v2';
+const ASSETS = [
+  '/',
+  '/index.html',
+  '/styles.css',
+  '/app.js',
+  '/manifest.json'
 ];
 
-// Instalar el Service Worker y almacenar los archivos en caché
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('Archivos en caché con éxito');
-                return cache.addAll(urlsToCache);
-            })
-    );
+// Instala el Service Worker y guarda los archivos estáticos
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+  self.skipWaiting();
 });
 
-// Interceptar las peticiones para servir desde caché (Estrategia: Cache First)
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Si el archivo está en la caché, lo devolvemos
-                if (response) {
-                    return response;
-                }
-                // Si no, lo pedimos a la red
-                return fetch(event.request);
-            })
-    );
+// Intercepta las peticiones: busca primero en caché, si no está, va a la red
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((res) => res || fetch(e.request))
+  );
 });
 
-// Actualizar el Service Worker y limpiar cachés antiguas
-self.addEventListener('activate', (event) => {
-    const cacheWhitelist = [CACHE_NAME];
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheWhitelist.indexOf(cacheName) === -1) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
-    );
+// Limpia cachés viejas si actualizas la versión
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      );
+    })
+  );
 });
