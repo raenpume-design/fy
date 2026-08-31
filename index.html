@@ -4,66 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Finanzas</title>
+    <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root {
-            --bg: #f8fafc;
-            --surface: #ffffff;
-            --text: #0f172a;
-            --subtext: #64748b;
-            --primary: #0f172a;
-            --success: #10b981;
-            --danger: #f43f5e;
-            --accent: #6366f1;
-            --border: #e2e8f0;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding-bottom: 3rem; }
-        .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem; position: sticky; top: 0; z-index: 10; }
-        .container { max-width: 500px; margin: 0 auto; padding: 1rem; display: flex; flex-direction: column; gap: 1.25rem; }
-        .badge { background: #ecfdf5; color: #047857; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 9999px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
-        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .card-dark { background: var(--primary); color: white; padding: 1rem; border-radius: 1rem; }
-        .card-green { background: var(--success); color: white; padding: 1rem; border-radius: 1rem; }
-        .val { font-size: 1.4rem; font-weight: 800; margin-top: 0.25rem; }
-        .sub { font-size: 0.75rem; opacity: 0.8; }
-        
-        .btn-action { border: none; color: white; font-weight: 700; padding: 0.75rem 0.25rem; border-radius: 0.75rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; font-size: 0.75rem; }
-        .btn-ingreso { background: var(--success); }
-        .btn-egreso { background: var(--danger); }
-        .btn-bolsillo { background: var(--accent); }
-        .btn-proyectado { background: #8b5cf6; }
-
-        .btn-option { border: 1px solid var(--border); background: #f1f5f9; padding: 0.6rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; text-align: center; }
-        .btn-option.selected { background: var(--primary); color: white; border-color: var(--primary); }
-
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-        .section-title { font-size: 1rem; font-weight: 700; }
-        .btn-link { background: none; border: none; color: var(--accent); font-size: 0.75rem; font-weight: 700; cursor: pointer; }
-        .item-row { padding: 0.75rem; background: #f1f5f9; border-radius: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* Modal */
-        .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center; padding: 1rem; z-index: 100; }
-        .modal.hidden { display: none !important; }
-        .modal-body { background: white; width: 100%; max-width: 450px; border-radius: 1.25rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-        .input-group { display: flex; flex-direction: column; gap: 0.3rem; }
-        .input-group label { font-size: 0.7rem; font-weight: 700; color: var(--subtext); text-transform: uppercase; }
-        .input-group input, .input-group select { padding: 0.75rem; background: #f1f5f9; border: 1px solid var(--border); border-radius: 0.75rem; font-size: 1rem; outline: none; }
-        .btn-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-        .btn-secondary { width: 50%; padding: 0.75rem; background: #f1f5f9; border: none; border-radius: 0.75rem; font-weight: 600; color: var(--subtext); cursor: pointer; }
-        .btn-primary { width: 50%; padding: 0.75rem; background: var(--primary); border: none; border-radius: 0.75rem; font-weight: 600; color: white; cursor: pointer; }
-    </style>
 </head>
 <body>
-
-    <!-- CONFIGURACIÓN SUPABASE -->
-    <script>
-        const SUPABASE_URL = "https://fpweccrefuiznuugkngm.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_3YKhDoPtMQe3VRyOROt9xQ_ZjuqeT7u";
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    </script>
 
     <header class="header">
         <div style="max-width: 500px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
@@ -73,7 +17,6 @@
     </header>
 
     <main class="container">
-
         <!-- RESUMEN REAL -->
         <section class="grid-2">
             <div class="card-dark">
@@ -126,7 +69,7 @@
                 <button onclick="abrirModalCuenta()" class="btn-link">+ Agregar Cuenta</button>
             </div>
             <div id="lista-cuentas">
-                <p style="font-size: 0.8rem; color: var(--subtext);">No hay cuentas o tarjetas registradas.</p>
+                <p style="font-size: 0.8rem; color: var(--subtext);">Cargando cuentas...</p>
             </div>
         </section>
 
@@ -137,7 +80,7 @@
                 <button onclick="abrirModalBolsillo()" class="btn-link">+ Nuevo Bolsillo</button>
             </div>
             <div id="lista-bolsillos">
-                <p style="font-size: 0.8rem; color: var(--subtext);">No tienes bolsillos creados.</p>
+                <p style="font-size: 0.8rem; color: var(--subtext);">Cargando bolsillos...</p>
             </div>
         </section>
 
@@ -156,15 +99,19 @@
                 <p style="font-size: 0.8rem; color: var(--subtext);">Sin movimientos.</p>
             </div>
         </section>
-
     </main>
 
     <!-- MODAL 1: REGISTRAR TRANSACCIÓN -->
     <div id="modal-transaccion" class="modal hidden">
         <div class="modal-body">
             <h3 id="modal-tx-titulo" style="font-size: 1.1rem; font-weight: 700;">Nuevo Movimiento</h3>
-            <form onsubmit="guardarTransaccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <form id="form-transaccion" onsubmit="guardarTransaccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <input type="hidden" id="tx-tipo">
+                
+                <div class="input-group">
+                    <label>Fecha</label>
+                    <input type="date" id="tx-fecha" required>
+                </div>
                 <div class="input-group">
                     <label>Monto ($)</label>
                     <input type="text" inputmode="numeric" id="tx-monto" required placeholder="0" oninput="formatInput(this)">
@@ -193,7 +140,7 @@
     <div id="modal-cuenta" class="modal hidden">
         <div class="modal-body">
             <h3 style="font-size: 1.1rem; font-weight: 700;">Agregar Cuenta o Tarjeta</h3>
-            <form onsubmit="guardarCuenta(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <form id="form-cuenta" onsubmit="guardarCuenta(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <div class="input-group">
                     <label>Nombre</label>
                     <input type="text" id="cuenta-nombre" required placeholder="Ej. Bancolombia, Nubank, Efectivo">
@@ -208,7 +155,7 @@
                     </div>
                 </div>
                 <div id="div-cupo" class="input-group hidden">
-                    <label>Cupo Total de la Tarjeta ($)</label>
+                    <label>Cupo Total ($)</label>
                     <input type="text" inputmode="numeric" id="cuenta-cupo" placeholder="0" oninput="formatInput(this)">
                 </div>
                 <div class="btn-row">
@@ -223,7 +170,7 @@
     <div id="modal-bolsillo" class="modal hidden">
         <div class="modal-body">
             <h3 style="font-size: 1.1rem; font-weight: 700;">Crear Bolsillo de Ahorro</h3>
-            <form onsubmit="guardarBolsillo(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <form id="form-bolsillo" onsubmit="guardarBolsillo(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <div class="input-group">
                     <label>Nombre del Bolsillo</label>
                     <input type="text" id="bolsillo-nombre" required placeholder="Ej. Viaje, Emergencias">
@@ -244,13 +191,17 @@
     <div id="modal-proyeccion" class="modal hidden">
         <div class="modal-body">
             <h3 style="font-size: 1.1rem; font-weight: 700;">Agregar Proyección</h3>
-            <form onsubmit="guardarProyeccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <form id="form-proyeccion" onsubmit="guardarProyeccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <div class="input-group">
-                    <label>Tipo de Proyección</label>
+                    <label>Tipo</label>
                     <div class="grid-2">
                         <button type="button" class="btn-option selected" id="opt-proy-ingreso" onclick="seleccionarTipoProyeccion('ingreso')">Ingreso</button>
                         <button type="button" class="btn-option" id="opt-proy-egreso" onclick="seleccionarTipoProyeccion('egreso')">Egreso</button>
                     </div>
+                </div>
+                <div class="input-group">
+                    <label>Fecha Estimada</label>
+                    <input type="date" id="proy-fecha" required>
                 </div>
                 <div class="input-group">
                     <label>Concepto</label>
@@ -268,17 +219,50 @@
         </div>
     </div>
 
-    <!-- MODAL 5: EJECUTAR PROYECCIÓN (PASAR A HECHO) -->
+    <!-- MODAL 5: SACAR DINERO DE BOLSILLO -->
+    <div id="modal-sacar-bolsillo" class="modal hidden">
+        <div class="modal-body">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Sacar Dinero del Bolsillo</h3>
+            <p id="sacar-resumen" style="font-size: 0.85rem; color: var(--subtext);"></p>
+            <form id="form-sacar-bolsillo" onsubmit="confirmarSacarBolsillo(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <input type="hidden" id="sacar-bolsillo-id">
+                <input type="hidden" id="sacar-bolsillo-max">
+                
+                <div class="input-group">
+                    <label>Fecha</label>
+                    <input type="date" id="sacar-fecha" required>
+                </div>
+                <div class="input-group">
+                    <label>Monto a Retirar ($)</label>
+                    <input type="text" inputmode="numeric" id="sacar-monto" required placeholder="0" oninput="formatInput(this)">
+                </div>
+                <div class="input-group">
+                    <label>Cuenta de Destino</label>
+                    <select id="sacar-cuenta-destino" required></select>
+                </div>
+                <div class="btn-row">
+                    <button type="button" onclick="cerrarModal('modal-sacar-bolsillo')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Transferir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 6: EJECUTAR PROYECCIÓN -->
     <div id="modal-ejecutar-proyeccion" class="modal hidden">
         <div class="modal-body">
             <h3 style="font-size: 1.1rem; font-weight: 700;">Pasar Proyección a Real</h3>
             <p id="proy-exec-resumen" style="font-size: 0.85rem; color: var(--subtext);"></p>
-            <form onsubmit="confirmarEjecutarProyeccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <form id="form-ejecutar-proyeccion" onsubmit="confirmarEjecutarProyeccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <input type="hidden" id="proy-exec-id">
                 <input type="hidden" id="proy-exec-tipo">
                 <input type="hidden" id="proy-exec-monto">
                 <input type="hidden" id="proy-exec-concepto">
                 
+                <div class="input-group">
+                    <label>Fecha Real de Ejecución</label>
+                    <input type="date" id="proy-exec-fecha" required>
+                </div>
                 <div class="input-group">
                     <label>Selecciona Cuenta / Medio de Pago</label>
                     <select id="proy-exec-cuenta" required></select>
@@ -292,298 +276,6 @@
         </div>
     </div>
 
-    <!-- LÓGICA JAVASCRIPT -->
-    <script>
-        let cuentas = [];
-        let bolsillos = [];
-        let proyecciones = [];
-        let tipoCuentaSeleccionado = 'efectivo';
-        let tipoProyeccionSeleccionado = 'ingreso';
-
-        /* AYUDANTES DE FORMATO DE DINERO */
-        function formatMoney(monto) {
-            const num = Math.round(Number(monto) || 0);
-            return '$' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        }
-
-        function formatInput(input) {
-            let val = input.value.replace(/\D/g, "");
-            if (val) {
-                input.value = Number(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-            } else {
-                input.value = "";
-            }
-        }
-
-        function parseInput(id) {
-            const val = document.getElementById(id).value.replace(/\./g, "").replace(/\D/g, "");
-            return Number(val) || 0;
-        }
-
-        async function cargarDatos() {
-            if (SUPABASE_URL.includes("TU_SUPABASE")) return;
-
-            const { data: resCuentas } = await db.from('cuentas').select('*');
-            const { data: resBolsillos } = await db.from('bolsillos').select('*');
-            const { data: resProy } = await db.from('proyecciones').select('*');
-            const { data: resTx } = await db.from('transacciones').select('*, cuentas(nombre), bolsillos(nombre)').order('fecha', { ascending: false }).limit(10);
-
-            cuentas = resCuentas || [];
-            bolsillos = resBolsillos || [];
-            proyecciones = resProy || [];
-
-            renderizarCuentas();
-            renderizarBolsillos();
-            renderizarProyecciones();
-            renderizarTransacciones(resTx || []);
-            actualizarSaldosGlobales();
-        }
-
-        function renderizarCuentas() {
-            const container = document.getElementById('lista-cuentas');
-            if (!cuentas.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin cuentas.</p>';
-            
-            container.innerHTML = cuentas.map(c => {
-                const esCredito = c.tipo === 'credito';
-                const cupoDisponible = esCredito ? (Number(c.cupo_total) - Number(c.saldo_actual)) : 0;
-                return `
-                    <div class="item-row">
-                        <div>
-                            <p style="font-weight: 700; font-size: 0.9rem;">${c.nombre} <span style="font-size: 0.65rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${c.tipo.toUpperCase()}</span></p>
-                            ${esCredito ? `<p style="font-size: 0.75rem; color: var(--subtext);">Deuda: ${formatMoney(c.saldo_actual)} | Libre: <b style="color: var(--success);">${formatMoney(cupoDisponible)}</b></p>` : `<p style="font-size: 0.75rem; color: var(--subtext);">Saldo: ${formatMoney(c.saldo_actual)}</p>`}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderizarBolsillos() {
-            const container = document.getElementById('lista-bolsillos');
-            if (!bolsillos.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin bolsillos.</p>';
-
-            container.innerHTML = bolsillos.map(b => `
-                <div class="item-row" style="background: #e0e7ff;">
-                    <div>
-                        <p style="font-weight: 700; font-size: 0.9rem; color: #3730a3;">🎯 ${b.nombre}</p>
-                        <p style="font-size: 0.75rem; color: #4338ca;">Ahorrado: <b>${formatMoney(b.saldo_actual)}</b> de ${formatMoney(b.meta)}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function renderizarProyecciones() {
-            const container = document.getElementById('lista-proyecciones');
-            if (!proyecciones.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin proyecciones registradas.</p>';
-
-            container.innerHTML = proyecciones.map(p => {
-                const esIngreso = p.tipo === 'ingreso';
-                const color = esIngreso ? 'var(--success)' : 'var(--danger)';
-                const signo = esIngreso ? '+' : '-';
-                return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;">
-                        <div>
-                            <p style="font-weight: 600;">${p.concepto}</p>
-                            <p style="font-size: 0.7rem; color: var(--subtext);">Proyectado (${p.tipo})</p>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-weight: 700; color: ${color};">${signo}${formatMoney(p.monto)}</span>
-                            <button onclick="abrirModalEjecutarProyeccion('${p.id}', '${p.tipo}', ${p.monto}, '${p.concepto}')" style="background: var(--success); color: white; border: none; padding: 0.25rem 0.4rem; border-radius: 0.4rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;">✔ Hecho</button>
-                            <button onclick="anularProyeccion('${p.id}')" style="background: #cbd5e1; color: #334155; border: none; padding: 0.25rem 0.4rem; border-radius: 0.4rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;">✖ Anular</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderizarTransacciones(txs) {
-            const container = document.getElementById('lista-transacciones');
-            if (!txs.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin movimientos.</p>';
-
-            container.innerHTML = txs.map(t => {
-                const esIngreso = t.tipo === 'ingreso';
-                const color = esIngreso ? 'var(--success)' : 'var(--danger)';
-                const signo = esIngreso ? '+' : '-';
-                return `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;">
-                        <div>
-                            <p style="font-weight: 600;">${t.concepto}</p>
-                            <p style="font-size: 0.7rem; color: var(--subtext);">${t.cuentas?.nombre || 'Cuenta'} ${t.bolsillos ? `➔ ${t.bolsillos.nombre}` : ''}</p>
-                        </div>
-                        <span style="font-weight: 700; color: ${color};">${signo}${formatMoney(t.monto)}</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function actualizarSaldosGlobales() {
-            const totalDisp = cuentas.filter(c => c.tipo !== 'credito').reduce((acc, c) => acc + Number(c.saldo_actual), 0);
-            const totalAhorro = bolsillos.reduce((acc, b) => acc + Number(b.saldo_actual), 0);
-            
-            const totalIngProy = proyecciones.filter(p => p.tipo === 'ingreso').reduce((acc, p) => acc + Number(p.monto), 0);
-            const totalEgProy = proyecciones.filter(p => p.tipo === 'egreso').reduce((acc, p) => acc + Number(p.monto), 0);
-
-            document.getElementById('total-disponible').innerText = formatMoney(totalDisp);
-            document.getElementById('total-ahorrado').innerText = formatMoney(totalAhorro);
-            document.getElementById('total-ingreso-proyectado').innerText = `+${formatMoney(totalIngProy)}`;
-            document.getElementById('total-egreso-proyectado').innerText = `-${formatMoney(totalEgProy)}`;
-        }
-
-        /* MODALES */
-        function abrirModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function cerrarModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-        function abrirModalTransaccion(tipo) {
-            document.getElementById('tx-tipo').value = tipo;
-            document.getElementById('modal-tx-titulo').innerText = tipo === 'ingreso' ? 'Registrar Ingreso' : (tipo === 'egreso' ? 'Registrar Egreso' : 'Mover a Bolsillo');
-            
-            const selectCuenta = document.getElementById('tx-cuenta');
-            selectCuenta.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
-
-            const divBolsillo = document.getElementById('div-bolsillo-select');
-            if (tipo === 'ahorro') {
-                divBolsillo.classList.remove('hidden');
-                document.getElementById('tx-bolsillo').innerHTML = bolsillos.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('');
-            } else {
-                divBolsillo.classList.add('hidden');
-            }
-
-            abrirModal('modal-transaccion');
-        }
-
-        function abrirModalCuenta() { abrirModal('modal-cuenta'); }
-        function abrirModalBolsillo() { abrirModal('modal-bolsillo'); }
-        function abrirModalProyeccion() { abrirModal('modal-proyeccion'); }
-
-        function abrirModalEjecutarProyeccion(id, tipo, monto, concepto) {
-            document.getElementById('proy-exec-id').value = id;
-            document.getElementById('proy-exec-tipo').value = tipo;
-            document.getElementById('proy-exec-monto').value = monto;
-            document.getElementById('proy-exec-concepto').value = concepto;
-
-            document.getElementById('proy-exec-resumen').innerText = `Vas a pasar "${concepto}" (${formatMoney(monto)}) a movimiento real.`;
-
-            const selectCuenta = document.getElementById('proy-exec-cuenta');
-            selectCuenta.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
-
-            abrirModal('modal-ejecutar-proyeccion');
-        }
-
-        function seleccionarTipoCuenta(tipo) {
-            tipoCuentaSeleccionado = tipo;
-            ['efectivo', 'transferencia', 'debito', 'credito'].forEach(t => {
-                const btn = document.getElementById(`opt-${t}`);
-                if (t === tipo) btn.classList.add('selected');
-                else btn.classList.remove('selected');
-            });
-
-            const divCupo = document.getElementById('div-cupo');
-            if (tipo === 'credito') divCupo.classList.remove('hidden');
-            else divCupo.classList.add('hidden');
-        }
-
-        function seleccionarTipoProyeccion(tipo) {
-            tipoProyeccionSeleccionado = tipo;
-            ['ingreso', 'egreso'].forEach(t => {
-                const btn = document.getElementById(`opt-proy-${t}`);
-                if (t === tipo) btn.classList.add('selected');
-                else btn.classList.remove('selected');
-            });
-        }
-
-        /* GUARDARES Y ACCIONES DE PROYECCIÓN */
-        async function guardarTransaccion(e) {
-            e.preventDefault();
-            const tipo = document.getElementById('tx-tipo').value;
-            const monto = parseInput('tx-monto');
-            const concepto = document.getElementById('tx-concepto').value;
-            const cuenta_id = document.getElementById('tx-cuenta').value;
-            const bolsillo_id = tipo === 'ahorro' ? document.getElementById('tx-bolsillo').value : null;
-
-            await db.from('transacciones').insert([{ tipo, monto, concepto, cuenta_id, bolsillo_id }]);
-
-            const cuenta = cuentas.find(c => c.id === cuenta_id);
-            if (tipo === 'ingreso') {
-                await db.from('cuentas').update({ saldo_actual: Number(cuenta.saldo_actual) + monto }).eq('id', cuenta_id);
-            } else if (tipo === 'egreso' || tipo === 'ahorro') {
-                const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) + monto : Number(cuenta.saldo_actual) - monto;
-                await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
-                
-                if (tipo === 'ahorro' && bolsillo_id) {
-                    const bol = bolsillos.find(b => b.id === bolsillo_id);
-                    await db.from('bolsillos').update({ saldo_actual: Number(bol.saldo_actual) + monto }).eq('id', bolsillo_id);
-                }
-            }
-
-            cerrarModal('modal-transaccion');
-            cargarDatos();
-        }
-
-        async function guardarCuenta(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('cuenta-nombre').value;
-            const cupo_total = tipoCuentaSeleccionado === 'credito' ? parseInput('cuenta-cupo') : 0;
-
-            await db.from('cuentas').insert([{ nombre, tipo: tipoCuentaSeleccionado, cupo_total, saldo_actual: 0 }]);
-            
-            cerrarModal('modal-cuenta');
-            cargarDatos();
-        }
-
-        async function guardarBolsillo(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('bolsillo-nombre').value;
-            const meta = parseInput('bolsillo-meta');
-
-            await db.from('bolsillos').insert([{ nombre, meta, saldo_actual: 0 }]);
-
-            cerrarModal('modal-bolsillo');
-            cargarDatos();
-        }
-
-        async function guardarProyeccion(e) {
-            e.preventDefault();
-            const concepto = document.getElementById('proy-concepto').value;
-            const monto = parseInput('proy-monto');
-
-            await db.from('proyecciones').insert([{ tipo: tipoProyeccionSeleccionado, concepto, monto }]);
-
-            cerrarModal('modal-proyeccion');
-            cargarDatos();
-        }
-
-        async function confirmarEjecutarProyeccion(e) {
-            e.preventDefault();
-            const id = document.getElementById('proy-exec-id').value;
-            const tipo = document.getElementById('proy-exec-tipo').value;
-            const monto = Number(document.getElementById('proy-exec-monto').value);
-            const concepto = document.getElementById('proy-exec-concepto').value;
-            const cuenta_id = document.getElementById('proy-exec-cuenta').value;
-
-            // 1. Guardar como transacción real
-            await db.from('transacciones').insert([{ tipo, monto, concepto, cuenta_id }]);
-
-            // 2. Actualizar saldo de la cuenta
-            const cuenta = cuentas.find(c => c.id === cuenta_id);
-            if (tipo === 'ingreso') {
-                await db.from('cuentas').update({ saldo_actual: Number(cuenta.saldo_actual) + monto }).eq('id', cuenta_id);
-            } else if (tipo === 'egreso') {
-                const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) + monto : Number(cuenta.saldo_actual) - monto;
-                await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
-            }
-
-            // 3. Eliminar de proyecciones
-            await db.from('proyecciones').delete().eq('id', id);
-
-            cerrarModal('modal-ejecutar-proyeccion');
-            cargarDatos();
-        }
-
-        async function anularProyeccion(id) {
-            await db.from('proyecciones').delete().eq('id', id);
-            cargarDatos();
-        }
-
-        window.onload = cargarDatos;
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
