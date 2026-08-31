@@ -34,18 +34,19 @@
             </div>
         </section>
 
-        <section class="card" style="background: #f3e8ff; border-color: #d8b4fe;">
+        <!-- NUEVO RESUMEN PROYECTADO -->
+        <section class="card" style="background: #f8fafc; border-color: #e2e8f0;">
             <div class="section-header" style="margin-bottom: 0.5rem;">
-                <h2 class="section-title" style="color: #6b21a8;">🔮 Proyección Mensual</h2>
+                <h2 class="section-title" style="color: #0f172a;">🔮 Futuro (Tras Proyecciones)</h2>
             </div>
             <div class="grid-2">
                 <div>
-                    <p style="font-size: 0.7rem; color: #7e22ce; font-weight: 600;">Ingresos Proyectados</p>
-                    <p id="total-ingreso-proyectado" style="font-size: 1.1rem; font-weight: 800; color: #15803d;">+$0</p>
+                    <p style="font-size: 0.7rem; color: var(--subtext); font-weight: 700;">Disponible Final</p>
+                    <p id="proy-disponible-final" style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">$0</p>
                 </div>
                 <div>
-                    <p style="font-size: 0.7rem; color: #7e22ce; font-weight: 600;">Egresos Proyectados</p>
-                    <p id="total-egreso-proyectado" style="font-size: 1.1rem; font-weight: 800; color: #b91c1c;">-$0</p>
+                    <p style="font-size: 0.7rem; color: var(--subtext); font-weight: 700;">Deuda Crédito Final</p>
+                    <p id="proy-credito-final" style="font-size: 1.1rem; font-weight: 800; color: var(--danger);">$0</p>
                 </div>
             </div>
         </section>
@@ -74,26 +75,20 @@
         </section>
 
         <section class="card">
-            <h2 class="section-title" style="margin-bottom: 0.75rem;">Lista de Proyecciones</h2>
+            <h2 class="section-title" style="margin-bottom: 0.75rem;">Proyecciones Pendientes</h2>
             <div id="lista-proyecciones"><p style="font-size: 0.8rem; color: var(--subtext);">Sin proyecciones registradas.</p></div>
-        </section>
-
-        <section class="card">
-            <h2 class="section-title" style="margin-bottom: 0.75rem;">Movimientos Recientes</h2>
-            <div id="lista-transacciones"><p style="font-size: 0.8rem; color: var(--subtext);">Sin movimientos.</p></div>
         </section>
     </main>
 
-    <!-- VISTA 2: MÓDULO DE MOVIMIENTOS COMPLETO CON FILTROS DE BOTONES -->
+    <!-- VISTA 2: MÓDULO DE MOVIMIENTOS EXCLUSIVO -->
     <main id="view-movimientos" class="container hidden">
         <section class="card" style="padding-bottom: 0.5rem;">
-            <h2 class="section-title" style="margin-bottom: 1rem;">🔍 Filtrar Movimientos</h2>
+            <h2 class="section-title" style="margin-bottom: 1rem;">🔍 Filtro de Movimientos</h2>
             
             <div class="input-group" style="margin-bottom: 1rem;">
                 <input type="text" id="filter-search" placeholder="Buscar concepto o monto..." oninput="filtrarMovimientos()">
             </div>
             
-            <!-- Botones de Fecha -->
             <p style="font-size: 0.7rem; font-weight: 700; color: var(--subtext); text-transform: uppercase; margin-bottom: 0.3rem;">Fecha</p>
             <div class="scroll-x">
                 <button class="filter-btn active" id="f-fecha-todas" onclick="setFiltroFecha('todas')">Todas</button>
@@ -101,7 +96,6 @@
                 <button class="filter-btn" id="f-fecha-mes" onclick="setFiltroFecha('mes')">Este Mes</button>
             </div>
 
-            <!-- Botones de Tipo -->
             <p style="font-size: 0.7rem; font-weight: 700; color: var(--subtext); text-transform: uppercase; margin-bottom: 0.3rem; margin-top: 0.5rem;">Tipo</p>
             <div class="scroll-x">
                 <button class="filter-btn active" id="f-tipo-todos" onclick="setFiltroTipo('todos')">Todos</button>
@@ -110,7 +104,6 @@
                 <button class="filter-btn" id="f-tipo-ahorro" onclick="setFiltroTipo('ahorro')">Bolsillos</button>
             </div>
 
-            <!-- Botones de Cuenta (Se generan dinámicamente) -->
             <p style="font-size: 0.7rem; font-weight: 700; color: var(--subtext); text-transform: uppercase; margin-bottom: 0.3rem; margin-top: 0.5rem;">Cuenta / Tarjeta</p>
             <div class="scroll-x" id="filter-cuentas-container">
                 <button class="filter-btn active">Todas</button>
@@ -128,10 +121,10 @@
     <!-- BARRA DE NAVEGACIÓN INFERIOR AWP -->
     <nav class="bottom-nav">
         <button id="nav-dashboard" onclick="cambiarVista('dashboard')" class="nav-btn active">
-            <span style="font-size: 1.1rem;">🏠</span> Panel
+            <span style="font-size: 1.25rem;">🏠</span> Inicio
         </button>
         <button id="nav-movimientos" onclick="cambiarVista('movimientos')" class="nav-btn">
-            <span style="font-size: 1.1rem;">📋</span> Movimientos
+            <span style="font-size: 1.25rem;">📋</span> Historial
         </button>
     </nav>
 
@@ -200,7 +193,7 @@
 
     <div id="modal-bolsillo" class="modal hidden">
         <div class="modal-body">
-            <h3 style="font-size: 1.1rem; font-weight: 700;">Crear Bolsillo de Ahorro</h3>
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Crear Bolsillo</h3>
             <form id="form-bolsillo" onsubmit="guardarBolsillo(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <div class="input-group">
                     <label>Nombre del Bolsillo</label>
@@ -224,7 +217,7 @@
 
     <div id="modal-editar-bolsillo" class="modal hidden">
         <div class="modal-body">
-            <h3 style="font-size: 1.1rem; font-weight: 700;">Editar Saldo del Bolsillo</h3>
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Editar Saldo</h3>
             <p id="edit-bolsillo-nombre" style="font-size: 0.85rem; color: var(--subtext);"></p>
             <form id="form-editar-bolsillo" onsubmit="confirmarEditarBolsillo(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <input type="hidden" id="edit-bolsillo-id">
@@ -252,12 +245,16 @@
                     </div>
                 </div>
                 <div class="input-group">
+                    <label>Cuenta / Tarjeta Asociada</label>
+                    <select id="proy-cuenta" required></select>
+                </div>
+                <div class="input-group">
                     <label>Fecha Estimada</label>
                     <input type="date" id="proy-fecha" required>
                 </div>
                 <div class="input-group">
                     <label>Concepto</label>
-                    <input type="text" id="proy-concepto" required placeholder="Ej. Proyecto Freelance, Pago Arriendo">
+                    <input type="text" id="proy-concepto" required placeholder="Ej. Próxima Quincena, Netflix">
                 </div>
                 <div class="input-group">
                     <label>Monto Estimado ($)</label>
@@ -307,12 +304,14 @@
                 <input type="hidden" id="proy-exec-tipo">
                 <input type="hidden" id="proy-exec-monto">
                 <input type="hidden" id="proy-exec-concepto">
+                <input type="hidden" id="proy-exec-cuenta-original">
+                
                 <div class="input-group">
                     <label>Fecha Real de Ejecución</label>
                     <input type="date" id="proy-exec-fecha" required>
                 </div>
                 <div class="input-group">
-                    <label>Selecciona Cuenta / Medio de Pago</label>
+                    <label>Confirmar Cuenta / Tarjeta</label>
                     <select id="proy-exec-cuenta" required></select>
                 </div>
                 <div class="btn-row">
@@ -325,8 +324,12 @@
 
     <script src="app.js"></script>
     <script>
+        // Si el menú no cambiaba de página era por la caché de la PWA.
+        // Este script fuerza la actualización.
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(() => console.log('PWA lista'));
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                reg.update();
+            });
         }
     </script>
 </body>
