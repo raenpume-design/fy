@@ -3,23 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi App en Vercel</title>
-    <!-- Esto importa un diseño moderno automáticamente (Tailwind) -->
+    <title>Finanzas Personales</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen font-sans">
-    
-    <div class="bg-white p-10 rounded-2xl shadow-xl max-w-md w-full text-center">
-        <!-- Ícono de cohete -->
-        <div class="text-5xl mb-4">🚀</div>
-        
-        <h1 class="text-3xl font-extrabold text-gray-900 mb-2">¡Despliegue Exitoso!</h1>
-        <p class="text-gray-500 mb-8">El frontend nativo en Vercel está funcionando perfectamente.</p>
-        
-        <button id="btn-supabase" class="bg-black text-white px-6 py-3 rounded-lg font-semibold w-full hover:bg-gray-800 transition shadow-md">
-            Siguiente paso: Conectar Supabase
-        </button>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen pb-12">
+
+    <!-- CONFIGURACIÓN SUPABASE -->
+    <script>
+        const SUPABASE_URL = "https://fpweccrefuiznuugkngm.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_3YKhDoPtMQe3VRyOROt9xQ_ZjuqeT7u";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+
+    <!-- HEADER / DASHBOARD -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+        <div class="max-w-xl mx-auto px-4 py-4 flex items-center justify-between">
+            <h1 class="text-xl font-bold tracking-tight text-slate-900">Mis Finanzas</h1>
+            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-full">En Vivo</span>
+        </div>
+    </header>
+
+    <main class="max-w-xl mx-auto px-4 mt-6 space-y-6">
+
+        <!-- RESUMEN DE SALDOS -->
+        <section class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm">
+                <p class="text-xs text-slate-400 font-medium">Disponible (Efectivo/Débito)</p>
+                <p id="total-disponible" class="text-2xl font-extrabold mt-1">$0</p>
+            </div>
+            <div class="bg-emerald-600 text-white p-4 rounded-2xl shadow-sm">
+                <p class="text-xs text-emerald-100 font-medium">Ahorrado en Bolsillos</p>
+                <p id="total-ahorrado" class="text-2xl font-extrabold mt-1">$0</p>
+            </div>
+        </section>
+
+        <!-- BOTONES DE ACCIÓN RÁPIDA (UX POCOS CLICKS) -->
+        <section class="grid grid-cols-3 gap-2">
+            <button onclick="abrirModal('ingreso')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-md transition flex flex-col items-center justify-center text-sm">
+                <span class="text-lg">↓</span> + Ingreso
+            </button>
+            <button onclick="abrirModal('egreso')" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-xl shadow-md transition flex flex-col items-center justify-center text-sm">
+                <span class="text-lg">↑</span> - Egreso
+            </button>
+            <button onclick="abrirModal('ahorro')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-md transition flex flex-col items-center justify-center text-sm">
+                <span class="text-lg">🔒</span> Bolsillo
+            </button>
+        </section>
+
+        <!-- MODULO: BOLSILLOS DE AHORRO (ESTILO BANCOLOMBIA) -->
+        <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-slate-900">Mis Bolsillos</h2>
+                <button onclick="crearBolsillo()" class="text-xs text-indigo-600 font-bold hover:underline">+ Nuevo Bolsillo</button>
+            </div>
+            <div id="lista-bolsillos" class="space-y-3">
+                <p class="text-xs text-slate-400">No tienes bolsillos creados.</p>
+            </div>
+        </section>
+
+        <!-- MODULO: TARJETAS DE CRÉDITO Y CUENTAS -->
+        <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-slate-900">Cuentas y Tarjetas</h2>
+                <button onclick="crearCuenta()" class="text-xs text-indigo-600 font-bold hover:underline">+ Agregar Cuenta</button>
+            </div>
+            <div id="lista-cuentas" class="space-y-3">
+                <p class="text-xs text-slate-400">No hay cuentas o tarjetas registradas.</p>
+            </div>
+        </section>
+
+        <!-- HISTORIAL RECIENTE -->
+        <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 class="font-bold text-slate-900 mb-4">Movimientos Recientes</h2>
+            <div id="lista-transacciones" class="divide-y divide-slate-100">
+                <p class="text-xs text-slate-400 py-2">Sin movimientos.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DE REGISTRO RÁPIDO -->
+    <div id="modal-transaccion" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 id="modal-titulo" class="text-lg font-bold text-slate-900">Nuevo Movimiento</h3>
+            
+            <form id="form-transaccion" onsubmit="guardarTransaccion(event)" class="space-y-3">
+                <input type="hidden" id="tx-tipo">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase">Monto</label>
+                    <input type="number" id="tx-monto" required placeholder="0" class="w-full mt-1 p-3 bg-slate-100 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-slate-900">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase">Concepto</label>
+                    <input type="text" id="tx-concepto" required placeholder="Ej. Mercado, Salario, Cine" class="w-full mt-1 p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-slate-900">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase">Cuenta / Medio de Pago</label>
+                    <select id="tx-cuenta" required class="w-full mt-1 p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-slate-900"></select>
+                </div>
+
+                <div id="div-bolsillo-select" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase">Destino (Bolsillo)</label>
+                    <select id="tx-bolsillo" class="w-full mt-1 p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-slate-900"></select>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="cerrarModal()" class="w-1/2 py-3 font-semibold text-slate-500 bg-slate-100 rounded-xl">Cancelar</button>
+                    <button type="submit" class="w-1/2 py-3 font-semibold text-white bg-slate-900 rounded-xl shadow-md">Guardar</button>
+                </div>
+            </form>
+        </div>
     </div>
 
+    <!-- LÓGICA DE LA APLICACIÓN -->
+    <script>
+        let cuentas = [];
+        let bolsillos = [];
+
+        async function cargarDatos() {
+            if (SUPABASE_URL.includes("TU_SUPABASE")) return;
+
+            const { data: resCuentas } = await db.from('cuentas').select('*');
+            const { data: resBolsillos } = await db.from('bolsillos').select('*');
+            const { data: resTx } = await db.from('transacciones').select('*, cuentas(nombre), bolsillos(nombre)').order('fecha', { ascending: false }).limit(10);
+
+            cuentas = resCuentas || [];
+            bolsillos = resBolsillos || [];
+
+            renderizarCuentas();
+            renderizarBolsillos();
+            renderizarTransacciones(resTx || []);
+            actualizarSaldosGlobales();
+        }
+
+        function renderizarCuentas() {
+            const container = document.getElementById('lista-cuentas');
+            if (!cuentas.length) return container.innerHTML = '<p class="text-xs text-slate-400">Sin cuentas.</p>';
+            
+            container.innerHTML = cuentas.map(c => {
+                const esCredito = c.tipo === 'credito';
+                const cupoDisponible = esCredito ? (Number(c.cupo_total) - Number(c.saldo_actual)) : 0;
+                return `
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-sm text-slate-800">${c.nombre} <span class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-normal uppercase">${c.tipo}</span></p>
+                            ${esCredito ? `<p class="text-xs text-slate-500">Deuda: $${c.saldo_actual} | Libre: <b class="text-emerald-600">$${cupoDisponible}</b></p>` : `<p class="text-xs text-slate-500">Saldo: $${c.saldo_actual}</p>`}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderizarBolsillos() {
+            const container = document.getElementById('lista-bolsillos');
+            if (!bolsillos.length) return container.innerHTML = '<p class="text-xs text-slate-400">Sin bolsillos.</p>';
+
+            container.innerHTML = bolsillos.map(b => `
+                <div class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-sm text-indigo-950">🎯 ${b.nombre}</p>
+                        <p class="text-xs text-indigo-600">Ahorrado: <b>$${b.saldo_actual}</b> de $${b.meta}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderizarTransacciones(txs) {
+            const container = document.getElementById('lista-transacciones');
+            if (!txs.length) return container.innerHTML = '<p class="text-xs text-slate-400 py-2">Sin movimientos.</p>';
+
+            container.innerHTML = txs.map(t => {
+                const esIngreso = t.tipo === 'ingreso';
+                const color = esIngreso ? 'text-emerald-600' : 'text-rose-600';
+                const signo = esIngreso ? '+' : '-';
+                return `
+                    <div class="py-2.5 flex justify-between items-center text-sm">
+                        <div>
+                            <p class="font-semibold text-slate-800">${t.concepto}</p>
+                            <p class="text-xs text-slate-400">${t.cuentas?.nombre || 'Cuenta'} ${t.bolsillos ? `➔ ${t.bolsillos.nombre}` : ''}</p>
+                        </div>
+                        <span class="font-bold ${color}">${signo}$${t.monto}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function actualizarSaldosGlobales() {
+            const totalDisp = cuentas.filter(c => c.tipo !== 'credito').reduce((acc, c) => acc + Number(c.saldo_actual), 0);
+            const totalAhorro = bolsillos.reduce((acc, b) => acc + Number(b.saldo_actual), 0);
+
+            document.getElementById('total-disponible').innerText = `$${totalDisp}`;
+            document.getElementById('total-ahorrado').innerText = `$${totalAhorro}`;
+        }
+
+        function abrirModal(tipo) {
+            document.getElementById('tx-tipo').value = tipo;
+            document.getElementById('modal-titulo').innerText = tipo === 'ingreso' ? 'Registrar Ingreso' : (tipo === 'egreso' ? 'Registrar Egreso' : 'Mover a Bolsillo');
+            
+            const selectCuenta = document.getElementById('tx-cuenta');
+            selectCuenta.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
+
+            const divBolsillo = document.getElementById('div-bolsillo-select');
+            if (tipo === 'ahorro') {
+                divBolsillo.classList.remove('hidden');
+                document.getElementById('tx-bolsillo').innerHTML = bolsillos.map(b => `<option value="${b.id}">${b.nombre}</option>`).join('');
+            } else {
+                divBolsillo.classList.add('hidden');
+            }
+
+            document.getElementById('modal-transaccion').classList.remove('hidden');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-transaccion').classList.add('hidden');
+            document.getElementById('form-transaccion').reset();
+        }
+
+        async function guardarTransaccion(e) {
+            e.preventDefault();
+            const tipo = document.getElementById('tx-tipo').value;
+            const monto = Number(document.getElementById('tx-monto').value);
+            const concepto = document.getElementById('tx-concepto').value;
+            const cuenta_id = document.getElementById('tx-cuenta').value;
+            const bolsillo_id = tipo === 'ahorro' ? document.getElementById('tx-bolsillo').value : null;
+
+            await db.from('transacciones').insert([{ tipo, monto, concepto, cuenta_id, bolsillo_id }]);
+
+            // Actualizar saldos
+            const cuenta = cuentas.find(c => c.id === cuenta_id);
+            if (tipo === 'ingreso') {
+                await db.from('cuentas').update({ saldo_actual: Number(cuenta.saldo_actual) + monto }).eq('id', cuenta_id);
+            } else if (tipo === 'egreso' || tipo === 'ahorro') {
+                const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) + monto : Number(cuenta.saldo_actual) - monto;
+                await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
+                
+                if (tipo === 'ahorro' && bolsillo_id) {
+                    const bol = bolsillos.find(b => b.id === bolsillo_id);
+                    await db.from('bolsillos').update({ saldo_actual: Number(bol.saldo_actual) + monto }).eq('id', bolsillo_id);
+                }
+            }
+
+            cerrarModal();
+            cargarDatos();
+        }
+
+        async function crearCuenta() {
+            const nombre = prompt("Nombre de la cuenta o tarjeta (ej. Bancolombia Débito, Tarjeta Nubank):");
+            if (!nombre) return;
+            const tipo = prompt("Tipo: efectivo, transferencia, debito o credito:").toLowerCase();
+            let cupo_total = 0;
+            if (tipo === 'credito') {
+                cupo_total = Number(prompt("Cupo total de la tarjeta:") || 0);
+            }
+            await db.from('cuentas').insert([{ nombre, tipo, cupo_total, saldo_actual: 0 }]);
+            cargarDatos();
+        }
+
+        async function crearBolsillo() {
+            const nombre = prompt("Nombre del bolsillo (ej. Viaje, Fondo de Emergencia):");
+            if (!nombre) return;
+            const meta = Number(prompt("Meta de ahorro:") || 0);
+            await db.from('bolsillos').insert([{ nombre, meta, saldo_actual: 0 }]);
+            cargarDatos();
+        }
+
+        window.onload = cargarDatos;
+    </script>
 </body>
-</html> 
+</html>
