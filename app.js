@@ -1,6 +1,6 @@
 // CONFIGURACIÓN SUPABASE (REEMPLAZA CON TUS CREDENCIALES)
-const SUPABASE_URL = "TU_SUPABASE_URL_AQUI";
-const SUPABASE_KEY = "TU_SUPABASE_ANON_KEY_AQUI";
+const SUPABASE_URL = "https://fpweccrefuiznuugkngm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_3YKhDoPtMQe3VRyOROt9xQ_ZjuqeT7u";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let cuentas = [];
