@@ -111,7 +111,10 @@
         </section>
 
         <section class="card">
-            <h2 class="section-title" style="margin-bottom: 0.75rem;">Historial Completo</h2>
+            <div class="section-header">
+                <h2 class="section-title">Historial Completo</h2>
+                <span id="movimientos-count" style="font-size: 0.75rem; color: var(--subtext); font-weight: 600;"></span>
+            </div>
             <div id="lista-movimientos-completa">
                 <p style="font-size: 0.8rem; color: var(--subtext);">Cargando...</p>
             </div>
@@ -124,7 +127,7 @@
             <span style="font-size: 1.25rem;">🏠</span> Inicio
         </button>
         <button id="nav-movimientos" onclick="cambiarVista('movimientos')" class="nav-btn">
-            <span style="font-size: 1.25rem;">📋</span> Historial
+            <span style="font-size: 1.25rem;">📋</span> Movimientos
         </button>
     </nav>
 
