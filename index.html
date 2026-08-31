@@ -48,3 +48,33 @@
             </div>
         </section>
     </main>
+
+            <!-- Filtro por Fecha con Botones -->
+            <div class="filter-group">
+                <span class="filter-label">Período</span>
+                <div class="pill-container">
+                    <button class="pill-btn active" onclick="setFiltroFecha('todo', this)">Todo</button>
+                    <button class="pill-btn" onclick="setFiltroFecha('este_mes', this)">Este Mes</button>
+                    <button class="pill-btn" onclick="setFiltroFecha('mes_pasado', this)">Mes Pasado</button>
+                </div>
+            </div>
+
+            <!-- Filtro por Cuenta con Botones Dinámicos -->
+            <div class="filter-group">
+                <span class="filter-label">Cuenta / Tarjeta</span>
+                <div class="pill-container" id="filter-cuentas-pills">
+                    <!-- Se cargan dinámicamente los botones de tus cuentas -->
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="section-header">
+                <h2 class="section-title">Historial Completo</h2>
+                <span id="cant-movimientos" style="font-size: 0.75rem; color: var(--subtext); font-weight: 700;">0 registros</span>
+            </div>
+            <div id="lista-movimientos-completa">
+                <p style="font-size: 0.8rem; color: var(--subtext);">Cargando...</p>
+            </div>
+        </section>
+    </main>
