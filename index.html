@@ -1,95 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mis Finanzas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#3498db">
+    <title>Mi Aplicación PWA</title>
     
+    <!-- Enlace al manifiesto -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845731.png">
-
+    <!-- Enlace a los estilos -->
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
-<!-- VISTA 2: MÓDULO DE MOVIMIENTOS COMPLETO -->
-    <main id="view-movimientos" class="container hidden">
-        <section class="card" style="display: flex; flex-direction: column; gap: 1rem;">
-            <h2 class="section-title">🔍 Filtrar Movimientos</h2>
-            
-            <!-- Buscador por Texto -->
-            <div class="input-group">
-                <input type="text" id="filter-search" placeholder="Buscar por palabra (ej. Mercado, Salario)..." oninput="filtrarMovimientos()">
-            </div>
-
-            <!-- Filtro por Tipo con Botones -->
-            <div class="filter-group">
-                <span class="filter-label">Tipo de Movimiento</span>
-                <div class="pill-container">
-                    <button class="pill-btn active" onclick="setFiltroTipo('', this)">Todos</button>
-                    <button class="pill-btn" onclick="setFiltroTipo('ingreso', this)">↓ Ingresos</button>
-                    <button class="pill-btn" onclick="setFiltroTipo('egreso', this)">↑ Egresos</button>
-                    <button class="pill-btn" onclick="setFiltroTipo('ahorro', this)">🔒 Bolsillos</button>
-                </div>
-            </div>
-
-            <!-- Filtro por Fecha con Botones -->
-            <div class="filter-group">
-                <span class="filter-label">Período</span>
-                <div class="pill-container">
-                    <button class="pill-btn active" onclick="setFiltroFecha('todo', this)">Todo</button>
-                    <button class="pill-btn" onclick="setFiltroFecha('este_mes', this)">Este Mes</button>
-                    <button class="pill-btn" onclick="setFiltroFecha('mes_pasado', this)">Mes Pasado</button>
-                </div>
-            </div>
-
-            <!-- Filtro por Cuenta con Botones Dinámicos -->
-            <div class="filter-group">
-                <span class="filter-label">Cuenta / Tarjeta</span>
-                <div class="pill-container" id="filter-cuentas-pills">
-                    <!-- Se cargan dinámicamente los botones de tus cuentas -->
-                </div>
-            </div>
-        </section>
-
-        <section class="card">
-            <div class="section-header">
-                <h2 class="section-title">Historial Completo</h2>
-                <span id="cant-movimientos" style="font-size: 0.75rem; color: var(--subtext); font-weight: 700;">0 registros</span>
-            </div>
-            <div id="lista-movimientos-completa">
-                <p style="font-size: 0.8rem; color: var(--subtext);">Cargando...</p>
-            </div>
+<body>
+    <header>
+        <h1>Mi App PWA</h1>
+    </header>
+    
+    <main>
+        <section id="content">
+            <h2>Bienvenido</h2>
+            <p>Esta es una aplicación web progresiva de ejemplo. Funciona incluso sin conexión a internet.</p>
         </section>
     </main>
 
-            <!-- Filtro por Fecha con Botones -->
-            <div class="filter-group">
-                <span class="filter-label">Período</span>
-                <div class="pill-container">
-                    <button class="pill-btn active" onclick="setFiltroFecha('todo', this)">Todo</button>
-                    <button class="pill-btn" onclick="setFiltroFecha('este_mes', this)">Este Mes</button>
-                    <button class="pill-btn" onclick="setFiltroFecha('mes_pasado', this)">Mes Pasado</button>
-                </div>
-            </div>
-
-            <!-- Filtro por Cuenta con Botones Dinámicos -->
-            <div class="filter-group">
-                <span class="filter-label">Cuenta / Tarjeta</span>
-                <div class="pill-container" id="filter-cuentas-pills">
-                    <!-- Se cargan dinámicamente los botones de tus cuentas -->
-                </div>
-            </div>
-        </section>
-
-        <section class="card">
-            <div class="section-header">
-                <h2 class="section-title">Historial Completo</h2>
-                <span id="cant-movimientos" style="font-size: 0.75rem; color: var(--subtext); font-weight: 700;">0 registros</span>
-            </div>
-            <div id="lista-movimientos-completa">
-                <p style="font-size: 0.8rem; color: var(--subtext);">Cargando...</p>
-            </div>
-        </section>
-    </main>
+    <!-- Enlace a la lógica de la app -->
+    <script src="app.js"></script>
+</body>
+</html>
