@@ -19,20 +19,26 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
         body { background-color: var(--bg); color: var(--text); padding-bottom: 3rem; }
-        .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem; sticky; top: 0; }
+        .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem; position: sticky; top: 0; z-index: 10; }
         .container { max-width: 500px; margin: 0 auto; padding: 1rem; display: flex; flex-direction: column; gap: 1.25rem; }
         .badge { background: #ecfdf5; color: #047857; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 9999px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .card-dark { background: var(--primary); color: white; padding: 1rem; border-radius: 1rem; }
         .card-green { background: var(--success); color: white; padding: 1rem; border-radius: 1rem; }
-        .val { font-size: 1.5rem; font-weight: 800; margin-top: 0.25rem; }
+        .val { font-size: 1.4rem; font-weight: 800; margin-top: 0.25rem; }
         .sub { font-size: 0.75rem; opacity: 0.8; }
-        .btn-action { border: none; color: white; font-weight: 700; padding: 0.8rem; border-radius: 0.75rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-size: 0.85rem; }
+        
+        .btn-action { border: none; color: white; font-weight: 700; padding: 0.75rem 0.25rem; border-radius: 0.75rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; font-size: 0.75rem; }
         .btn-ingreso { background: var(--success); }
         .btn-egreso { background: var(--danger); }
         .btn-bolsillo { background: var(--accent); }
+        .btn-proyectado { background: #8b5cf6; }
+
+        .btn-option { border: 1px solid var(--border); background: #f1f5f9; padding: 0.6rem; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; text-align: center; }
+        .btn-option.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
         .section-title { font-size: 1rem; font-weight: 700; }
         .btn-link { background: none; border: none; color: var(--accent); font-size: 0.75rem; font-weight: 700; cursor: pointer; }
@@ -54,7 +60,7 @@
 
     <!-- CONFIGURACIÓN SUPABASE -->
     <script>
-        const SUPABASE_URL = "https://fpweccrefuiznuugkngm.supabase.coI";
+        const SUPABASE_URL = "https://fpweccrefuiznuugkngm.supabase.co";
         const SUPABASE_KEY = "sb_publishable_3YKhDoPtMQe3VRyOROt9xQ_ZjuqeT7u";
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     </script>
@@ -68,10 +74,10 @@
 
     <main class="container">
 
-        <!-- RESUMEN DE SALDOS -->
+        <!-- RESUMEN REAL -->
         <section class="grid-2">
             <div class="card-dark">
-                <p class="sub">Disponible (Efectivo/Débito)</p>
+                <p class="sub">Disponible Real</p>
                 <p id="total-disponible" class="val">$0</p>
             </div>
             <div class="card-green">
@@ -80,38 +86,66 @@
             </div>
         </section>
 
-        <!-- BOTONES DE ACCIÓN RÁPIDA -->
-        <section class="grid-3">
-            <button onclick="abrirModal('ingreso')" class="btn-action btn-ingreso">
-                <span>↓</span> + Ingreso
-            </button>
-            <button onclick="abrirModal('egreso')" class="btn-action btn-egreso">
-                <span>↑</span> - Egreso
-            </button>
-            <button onclick="abrirModal('ahorro')" class="btn-action btn-bolsillo">
-                <span>🔒</span> Bolsillo
-            </button>
+        <!-- RESUMEN PROYECTADO -->
+        <section class="card" style="background: #f3e8ff; border-color: #d8b4fe;">
+            <div class="section-header" style="margin-bottom: 0.5rem;">
+                <h2 class="section-title" style="color: #6b21a8;">🔮 Proyección Mensual</h2>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <p style="font-size: 0.7rem; color: #7e22ce; font-weight: 600;">Ingresos Proyectados</p>
+                    <p id="total-ingreso-proyectado" style="font-size: 1.1rem; font-weight: 800; color: #15803d;">+$0</p>
+                </div>
+                <div>
+                    <p style="font-size: 0.7rem; color: #7e22ce; font-weight: 600;">Egresos Proyectados</p>
+                    <p id="total-egreso-proyectado" style="font-size: 1.1rem; font-weight: 800; color: #b91c1c;">-$0</p>
+                </div>
+            </div>
         </section>
 
-        <!-- BOLSILLOS -->
-        <section class="card">
-            <div class="section-header">
-                <h2 class="section-title">Mis Bolsillos</h2>
-                <button onclick="crearBolsillo()" class="btn-link">+ Nuevo Bolsillo</button>
-            </div>
-            <div id="lista-bolsillos">
-                <p style="font-size: 0.8rem; color: var(--subtext);">No tienes bolsillos creados.</p>
-            </div>
+        <!-- BOTONES DE ACCIÓN RÁPIDA -->
+        <section class="grid-4">
+            <button onclick="abrirModalTransaccion('ingreso')" class="btn-action btn-ingreso">
+                <span>↓</span> + Ingreso
+            </button>
+            <button onclick="abrirModalTransaccion('egreso')" class="btn-action btn-egreso">
+                <span>↑</span> - Egreso
+            </button>
+            <button onclick="abrirModalTransaccion('ahorro')" class="btn-action btn-bolsillo">
+                <span>🔒</span> Bolsillo
+            </button>
+            <button onclick="abrirModalProyeccion()" class="btn-action btn-proyectado">
+                <span>🔮</span> Proyectar
+            </button>
         </section>
 
         <!-- CUENTAS Y TARJETAS -->
         <section class="card">
             <div class="section-header">
                 <h2 class="section-title">Cuentas y Tarjetas</h2>
-                <button onclick="crearCuenta()" class="btn-link">+ Agregar Cuenta</button>
+                <button onclick="abrirModalCuenta()" class="btn-link">+ Agregar Cuenta</button>
             </div>
             <div id="lista-cuentas">
                 <p style="font-size: 0.8rem; color: var(--subtext);">No hay cuentas o tarjetas registradas.</p>
+            </div>
+        </section>
+
+        <!-- BOLSILLOS -->
+        <section class="card">
+            <div class="section-header">
+                <h2 class="section-title">Mis Bolsillos</h2>
+                <button onclick="abrirModalBolsillo()" class="btn-link">+ Nuevo Bolsillo</button>
+            </div>
+            <div id="lista-bolsillos">
+                <p style="font-size: 0.8rem; color: var(--subtext);">No tienes bolsillos creados.</p>
+            </div>
+        </section>
+
+        <!-- PROYECCIONES REGISTRADAS -->
+        <section class="card">
+            <h2 class="section-title" style="margin-bottom: 0.75rem;">Lista de Proyecciones</h2>
+            <div id="lista-proyecciones">
+                <p style="font-size: 0.8rem; color: var(--subtext);">Sin proyecciones registradas.</p>
             </div>
         </section>
 
@@ -125,59 +159,138 @@
 
     </main>
 
-    <!-- MODAL DE REGISTRO RÁPIDO -->
+    <!-- MODAL 1: REGISTRAR TRANSACCIÓN -->
     <div id="modal-transaccion" class="modal hidden">
         <div class="modal-body">
-            <h3 id="modal-titulo" style="font-size: 1.1rem; font-weight: 700;">Nuevo Movimiento</h3>
-            
-            <form id="form-transaccion" onsubmit="guardarTransaccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <h3 id="modal-tx-titulo" style="font-size: 1.1rem; font-weight: 700;">Nuevo Movimiento</h3>
+            <form onsubmit="guardarTransaccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <input type="hidden" id="tx-tipo">
-
                 <div class="input-group">
                     <label>Monto</label>
                     <input type="number" id="tx-monto" required placeholder="0">
                 </div>
-
                 <div class="input-group">
                     <label>Concepto</label>
                     <input type="text" id="tx-concepto" required placeholder="Ej. Mercado, Salario, Cine">
                 </div>
-
                 <div class="input-group">
-                    <label>Cuenta / Medio de Pago</label>
+                    <label>Cuenta / Tarjeta</label>
                     <select id="tx-cuenta" required></select>
                 </div>
-
                 <div id="div-bolsillo-select" class="input-group hidden">
                     <label>Destino (Bolsillo)</label>
                     <select id="tx-bolsillo"></select>
                 </div>
-
                 <div class="btn-row">
-                    <button type="button" onclick="cerrarModal()" class="btn-secondary">Cancelar</button>
+                    <button type="button" onclick="cerrarModal('modal-transaccion')" class="btn-secondary">Cancelar</button>
                     <button type="submit" class="btn-primary">Guardar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- LÓGICA DE LA APLICACIÓN -->
+    <!-- MODAL 2: CREAR CUENTA / TARJETA -->
+    <div id="modal-cuenta" class="modal hidden">
+        <div class="modal-body">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Agregar Cuenta o Tarjeta</h3>
+            <form onsubmit="guardarCuenta(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="input-group">
+                    <label>Nombre</label>
+                    <input type="text" id="cuenta-nombre" required placeholder="Ej. Bancolombia, Nubank, Efectivo">
+                </div>
+                <div class="input-group">
+                    <label>Tipo de Cuenta</label>
+                    <div class="grid-2">
+                        <button type="button" class="btn-option selected" id="opt-efectivo" onclick="seleccionarTipoCuenta('efectivo')">Efectivo</button>
+                        <button type="button" class="btn-option" id="opt-transferencia" onclick="seleccionarTipoCuenta('transferencia')">Transferencia</button>
+                        <button type="button" class="btn-option" id="opt-debito" onclick="seleccionarTipoCuenta('debito')">Débito</button>
+                        <button type="button" class="btn-option" id="opt-credito" onclick="seleccionarTipoCuenta('credito')">Crédito</button>
+                    </div>
+                </div>
+                <div id="div-cupo" class="input-group hidden">
+                    <label>Cupo Total de la Tarjeta</label>
+                    <input type="number" id="cuenta-cupo" placeholder="0">
+                </div>
+                <div class="btn-row">
+                    <button type="button" onclick="cerrarModal('modal-cuenta')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Crear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CREAR BOLSILLO -->
+    <div id="modal-bolsillo" class="modal hidden">
+        <div class="modal-body">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Crear Bolsillo de Ahorro</h3>
+            <form onsubmit="guardarBolsillo(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="input-group">
+                    <label>Nombre del Bolsillo</label>
+                    <input type="text" id="bolsillo-nombre" required placeholder="Ej. Viaje, Emergencias">
+                </div>
+                <div class="input-group">
+                    <label>Meta de Ahorro</label>
+                    <input type="number" id="bolsillo-meta" required placeholder="0">
+                </div>
+                <div class="btn-row">
+                    <button type="button" onclick="cerrarModal('modal-bolsillo')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Crear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: CREAR PROYECCIÓN -->
+    <div id="modal-proyeccion" class="modal hidden">
+        <div class="modal-body">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Agregar Proyección</h3>
+            <form onsubmit="guardarProyeccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="input-group">
+                    <label>Tipo de Proyección</label>
+                    <div class="grid-2">
+                        <button type="button" class="btn-option selected" id="opt-proy-ingreso" onclick="seleccionarTipoProyeccion('ingreso')">Ingreso</button>
+                        <button type="button" class="btn-option" id="opt-proy-egreso" onclick="seleccionarTipoProyeccion('egreso')">Egreso</button>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Concepto</label>
+                    <input type="text" id="proy-concepto" required placeholder="Ej. Proyecto Freelance, Pago Arriendo">
+                </div>
+                <div class="input-group">
+                    <label>Monto Estimado</label>
+                    <input type="number" id="proy-monto" required placeholder="0">
+                </div>
+                <div class="btn-row">
+                    <button type="button" onclick="cerrarModal('modal-proyeccion')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- LÓGICA JAVASCRIPT -->
     <script>
         let cuentas = [];
         let bolsillos = [];
+        let proyecciones = [];
+        let tipoCuentaSeleccionado = 'efectivo';
+        let tipoProyeccionSeleccionado = 'ingreso';
 
         async function cargarDatos() {
             if (SUPABASE_URL.includes("TU_SUPABASE")) return;
 
             const { data: resCuentas } = await db.from('cuentas').select('*');
             const { data: resBolsillos } = await db.from('bolsillos').select('*');
+            const { data: resProy } = await db.from('proyecciones').select('*');
             const { data: resTx } = await db.from('transacciones').select('*, cuentas(nombre), bolsillos(nombre)').order('fecha', { ascending: false }).limit(10);
 
             cuentas = resCuentas || [];
             bolsillos = resBolsillos || [];
+            proyecciones = resProy || [];
 
             renderizarCuentas();
             renderizarBolsillos();
+            renderizarProyecciones();
             renderizarTransacciones(resTx || []);
             actualizarSaldosGlobales();
         }
@@ -214,6 +327,26 @@
             `).join('');
         }
 
+        function renderizarProyecciones() {
+            const container = document.getElementById('lista-proyecciones');
+            if (!proyecciones.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin proyecciones registradas.</p>';
+
+            container.innerHTML = proyecciones.map(p => {
+                const esIngreso = p.tipo === 'ingreso';
+                const color = esIngreso ? 'var(--success)' : 'var(--danger)';
+                const signo = esIngreso ? '+' : '-';
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;">
+                        <div>
+                            <p style="font-weight: 600;">${p.concepto}</p>
+                            <p style="font-size: 0.7rem; color: var(--subtext);">Proyectado (${p.tipo})</p>
+                        </div>
+                        <span style="font-weight: 700; color: ${color};">${signo}$${p.monto}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function renderizarTransacciones(txs) {
             const container = document.getElementById('lista-transacciones');
             if (!txs.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin movimientos.</p>';
@@ -237,14 +370,23 @@
         function actualizarSaldosGlobales() {
             const totalDisp = cuentas.filter(c => c.tipo !== 'credito').reduce((acc, c) => acc + Number(c.saldo_actual), 0);
             const totalAhorro = bolsillos.reduce((acc, b) => acc + Number(b.saldo_actual), 0);
+            
+            const totalIngProy = proyecciones.filter(p => p.tipo === 'ingreso').reduce((acc, p) => acc + Number(p.monto), 0);
+            const totalEgProy = proyecciones.filter(p => p.tipo === 'egreso').reduce((acc, p) => acc + Number(p.monto), 0);
 
             document.getElementById('total-disponible').innerText = `$${totalDisp}`;
             document.getElementById('total-ahorrado').innerText = `$${totalAhorro}`;
+            document.getElementById('total-ingreso-proyectado').innerText = `+$${totalIngProy}`;
+            document.getElementById('total-egreso-proyectado').innerText = `-$${totalEgProy}`;
         }
 
-        function abrirModal(tipo) {
+        /* MANEJO DE MODALES Y BOTONES */
+        function abrirModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function cerrarModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function abrirModalTransaccion(tipo) {
             document.getElementById('tx-tipo').value = tipo;
-            document.getElementById('modal-titulo').innerText = tipo === 'ingreso' ? 'Registrar Ingreso' : (tipo === 'egreso' ? 'Registrar Egreso' : 'Mover a Bolsillo');
+            document.getElementById('modal-tx-titulo').innerText = tipo === 'ingreso' ? 'Registrar Ingreso' : (tipo === 'egreso' ? 'Registrar Egreso' : 'Mover a Bolsillo');
             
             const selectCuenta = document.getElementById('tx-cuenta');
             selectCuenta.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
@@ -257,14 +399,36 @@
                 divBolsillo.classList.add('hidden');
             }
 
-            document.getElementById('modal-transaccion').classList.remove('hidden');
+            abrirModal('modal-transaccion');
         }
 
-        function cerrarModal() {
-            document.getElementById('modal-transaccion').classList.add('hidden');
-            document.getElementById('form-transaccion').reset();
+        function abrirModalCuenta() { abrirModal('modal-cuenta'); }
+        function abrirModalBolsillo() { abrirModal('modal-bolsillo'); }
+        function abrirModalProyeccion() { abrirModal('modal-proyeccion'); }
+
+        function seleccionarTipoCuenta(tipo) {
+            tipoCuentaSeleccionado = tipo;
+            ['efectivo', 'transferencia', 'debito', 'credito'].forEach(t => {
+                const btn = document.getElementById(`opt-${t}`);
+                if (t === tipo) btn.classList.add('selected');
+                else btn.classList.remove('selected');
+            });
+
+            const divCupo = document.getElementById('div-cupo');
+            if (tipo === 'credito') divCupo.classList.remove('hidden');
+            else divCupo.classList.add('hidden');
         }
 
+        function seleccionarTipoProyeccion(tipo) {
+            tipoProyeccionSeleccionado = tipo;
+            ['ingreso', 'egreso'].forEach(t => {
+                const btn = document.getElementById(`opt-proy-${t}`);
+                if (t === tipo) btn.classList.add('selected');
+                else btn.classList.remove('selected');
+            });
+        }
+
+        /* ACCIONES DE GUARDADO */
         async function guardarTransaccion(e) {
             e.preventDefault();
             const tipo = document.getElementById('tx-tipo').value;
@@ -288,27 +452,40 @@
                 }
             }
 
-            cerrarModal();
+            cerrarModal('modal-transaccion');
             cargarDatos();
         }
 
-        async function crearCuenta() {
-            const nombre = prompt("Nombre de la cuenta o tarjeta (ej. Bancolombia Débito, Tarjeta Nubank):");
-            if (!nombre) return;
-            const tipo = prompt("Tipo: efectivo, transferencia, debito o credito:").toLowerCase();
-            let cupo_total = 0;
-            if (tipo === 'credito') {
-                cupo_total = Number(prompt("Cupo total de la tarjeta:") || 0);
-            }
-            await db.from('cuentas').insert([{ nombre, tipo, cupo_total, saldo_actual: 0 }]);
+        async function guardarCuenta(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('cuenta-nombre').value;
+            const cupo_total = tipoCuentaSeleccionado === 'credito' ? Number(document.getElementById('cuenta-cupo').value || 0) : 0;
+
+            await db.from('cuentas').insert([{ nombre, tipo: tipoCuentaSeleccionado, cupo_total, saldo_actual: 0 }]);
+            
+            cerrarModal('modal-cuenta');
             cargarDatos();
         }
 
-        async function crearBolsillo() {
-            const nombre = prompt("Nombre del bolsillo (ej. Viaje, Fondo de Emergencia):");
-            if (!nombre) return;
-            const meta = Number(prompt("Meta de ahorro:") || 0);
+        async function guardarBolsillo(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('bolsillo-nombre').value;
+            const meta = Number(document.getElementById('bolsillo-meta').value);
+
             await db.from('bolsillos').insert([{ nombre, meta, saldo_actual: 0 }]);
+
+            cerrarModal('modal-bolsillo');
+            cargarDatos();
+        }
+
+        async function guardarProyeccion(e) {
+            e.preventDefault();
+            const concepto = document.getElementById('proy-concepto').value;
+            const monto = Number(document.getElementById('proy-monto').value);
+
+            await db.from('proyecciones').insert([{ tipo: tipoProyeccionSeleccionado, concepto, monto }]);
+
+            cerrarModal('modal-proyeccion');
             cargarDatos();
         }
 
