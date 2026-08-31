@@ -7,6 +7,8 @@ let cuentas = [];
 let bolsillos = [];
 let proyecciones = [];
 let todasLasTransacciones = [];
+let prestamos = JSON.parse(localStorage.getItem('mis_finanzas_prestamos') || '[]');
+let tarjetasMetadata = JSON.parse(localStorage.getItem('mis_finanzas_tarjetas_meta') || '{}');
 
 let tipoCuentaSeleccionado = 'efectivo';
 let tipoProyeccionSeleccionado = 'ingreso';
@@ -14,7 +16,11 @@ let filtroFechaActual = 'todas';
 let filtroTipoActual = 'todos';
 let filtroCuentaActual = 'todas';
 
-/* FORMATOS */
+// Estado de periodos para Inicio (Dashboard)
+let mesSeleccionado = '';
+let subperiodoSeleccionado = 'mes'; // 'mes', 'q1', 'q2'
+
+/* FORMATOS Y FECHAS */
 function getTodayString() { return new Date().toISOString().split('T')[0]; }
 
 function getLocalDateParts(fechaStr) {
@@ -56,7 +62,51 @@ function parseInput(id) {
     return Number(val) || 0;
 }
 
-/* NAVEGACIÓN AWP EXCLUSIVA */
+/* GESTIÓN DE PERIODOS Y QUINCENAS (DASHBOARD) */
+const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+function inicializarSelectorMeses() {
+    const select = document.getElementById('filtro-mes-select');
+    if (!select) return;
+
+    const hoy = new Date();
+    const curYear = hoy.getFullYear();
+    const curMonth = hoy.getMonth();
+
+    if (!mesSeleccionado) {
+        mesSeleccionado = `${curYear}-${String(curMonth + 1).padStart(2, '0')}`;
+    }
+
+    let html = '';
+    for (let i = -2; i <= 6; i++) {
+        const d = new Date(curYear, curMonth + i, 1);
+        const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const isCurrent = (d.getFullYear() === curYear && d.getMonth() === curMonth);
+        const label = `${MESES_NOMBRES[d.getMonth()]} ${d.getFullYear()}${isCurrent ? ' • Actual' : ''}`;
+        html += `<option value="${val}" ${val === mesSeleccionado ? 'selected' : ''}>${label}</option>`;
+    }
+    select.innerHTML = html;
+}
+
+function cambiarMesPeriodo(val) {
+    mesSeleccionado = val;
+    actualizarSaldosGlobales();
+    renderizarProyecciones();
+}
+
+function setSubperiodo(sub) {
+    subperiodoSeleccionado = sub;
+    ['mes', 'q1', 'q2'].forEach(p => {
+        const btn = document.getElementById(`pill-periodo-${p}`);
+        if (btn) btn.classList.remove('active');
+    });
+    const activeBtn = document.getElementById(`pill-periodo-${sub}`);
+    if (activeBtn) activeBtn.classList.add('active');
+    actualizarSaldosGlobales();
+    renderizarProyecciones();
+}
+
+/* NAVEGACIÓN ENTRE VISTAS */
 function cambiarVista(vista) {
     const viewDash = document.getElementById('view-dashboard');
     const viewMov = document.getElementById('view-movimientos');
@@ -79,9 +129,11 @@ function cambiarVista(vista) {
     }
 }
 
-/* CARGA DE DATOS */
+/* CARGA DE DATOS PRINCIPAL */
 async function cargarDatos() {
     if (SUPABASE_URL.includes("TU_SUPABASE")) return;
+
+    inicializarSelectorMeses();
 
     const { data: resCuentas } = await db.from('cuentas').select('*');
     const { data: resBolsillos } = await db.from('bolsillos').select('*');
@@ -94,6 +146,7 @@ async function cargarDatos() {
     todasLasTransacciones = resTx || [];
 
     renderizarCuentas();
+    renderizarPrestamos();
     renderizarBolsillos();
     renderizarProyecciones();
     generarBotonesFiltroCuentas();
@@ -112,19 +165,121 @@ function generarBotonesFiltroCuentas() {
     container.innerHTML = html;
 }
 
-/* RENDERIZADO */
+/* RENDERIZADO DE CUENTAS Y TARJETAS */
 function renderizarCuentas() {
     const container = document.getElementById('lista-cuentas');
-    if (!cuentas.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin cuentas.</p>';
+    if (!container) return;
+    if (!cuentas.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin cuentas registradas.</p>';
     
     container.innerHTML = cuentas.map(c => {
         const esCredito = c.tipo === 'credito';
-        const cupoDisponible = esCredito ? (Number(c.cupo_total) - Number(c.saldo_actual)) : 0;
+        
+        if (esCredito) {
+            const meta = tarjetasMetadata[c.id] || {};
+            const diaPago = meta.dia_pago || '17 de cada mes';
+            const periodo = meta.periodo_corte || 'Entre 28 y 28 de cada mes';
+
+            // Calcular deuda proyectada para esta tarjeta sumando todas las proyecciones
+            let egresosProyCard = 0;
+            let ingresosProyCard = 0;
+            proyecciones.forEach(p => {
+                if (p.cuenta_id === c.id) {
+                    if (p.tipo === 'egreso') egresosProyCard += Number(p.monto);
+                    if (p.tipo === 'ingreso') ingresosProyCard += Number(p.monto);
+                }
+            });
+
+            const deudaActual = Number(c.saldo_actual) || 0;
+            const cupoTotal = Number(c.cupo_total) || 0;
+            const deudaProyectada = Math.max(0, deudaActual + egresosProyCard - ingresosProyCard);
+            const cupoLibreActual = Math.max(0, cupoTotal - deudaActual);
+            const cupoLibreProy = Math.max(0, cupoTotal - deudaProyectada);
+            const tieneProyeccion = (egresosProyCard > 0 || ingresosProyCard > 0);
+
+            return `
+                <div class="item-row" style="flex-direction: column; align-items: stretch; gap: 0.4rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <p style="font-weight: 700; font-size: 0.9rem;">
+                            💳 ${c.nombre} 
+                            <span style="font-size: 0.65rem; background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-weight: 700;">CRÉDITO</span>
+                        </p>
+                        <button onclick="abrirModalEditarCuenta('${c.id}')" style="background: none; border: none; color: var(--accent); font-size: 0.8rem; cursor: pointer; font-weight: 700;" title="Editar tarjeta">⚙️ Editar</button>
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--subtext); background: #ffffff; padding: 0.4rem 0.6rem; border-radius: 0.5rem; border: 1px solid var(--border);">
+                        <p>📅 <b>Límite de pago:</b> ${diaPago} &bull; <b>Periodo:</b> ${periodo}</p>
+                        <p style="margin-top: 2px;">Cupo Total: <b>${formatMoney(cupoTotal)}</b></p>
+                    </div>
+                    <div style="font-size: 0.75rem; display: flex; justify-content: space-between; border-top: 1px dashed var(--border); padding-top: 0.3rem;">
+                        <span>Deuda Actual: <b style="color: var(--danger);">${formatMoney(deudaActual)}</b> (Libre: <b style="color: var(--success);">${formatMoney(cupoLibreActual)}</b>)</span>
+                    </div>
+                    ${tieneProyeccion ? `
+                        <div style="font-size: 0.75rem; display: flex; justify-content: space-between; background: #fff1f2; padding: 0.3rem 0.5rem; border-radius: 0.4rem; color: #9f1239;">
+                            <span>🔮 Deuda Futura: <b>${formatMoney(deudaProyectada)}</b></span>
+                            <span>Libre Futuro: <b style="color: var(--success);">${formatMoney(cupoLibreProy)}</b></span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
         return `
             <div class="item-row">
                 <div>
-                    <p style="font-weight: 700; font-size: 0.9rem;">${c.nombre} <span style="font-size: 0.65rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${c.tipo.toUpperCase()}</span></p>
-                    ${esCredito ? `<p style="font-size: 0.75rem; color: var(--subtext);">Deuda Actual: ${formatMoney(c.saldo_actual)} | Libre: <b style="color: var(--success);">${formatMoney(cupoDisponible)}</b></p>` : `<p style="font-size: 0.75rem; color: var(--subtext);">Saldo Actual: ${formatMoney(c.saldo_actual)}</p>`}
+                    <p style="font-weight: 700; font-size: 0.9rem;">
+                        ${c.nombre} 
+                        <span style="font-size: 0.65rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${c.tipo.toUpperCase()}</span>
+                    </p>
+                    <p style="font-size: 0.75rem; color: var(--subtext); margin-top: 2px;">Saldo Actual: <b>${formatMoney(c.saldo_actual)}</b></p>
+                </div>
+                <div>
+                    <button onclick="abrirModalEditarCuenta('${c.id}')" style="background: none; border: none; color: var(--subtext); font-size: 0.8rem; cursor: pointer;" title="Editar cuenta">✏️</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/* RENDERIZADO DE PRÉSTAMOS */
+function renderizarPrestamos() {
+    const container = document.getElementById('lista-prestamos');
+    const resumenEl = document.getElementById('resumen-prestamos-total');
+    if (!container) return;
+
+    const totalPorCobrar = prestamos.filter(p => !p.cobrado).reduce((acc, p) => acc + Number(p.monto), 0);
+    if (resumenEl) {
+        resumenEl.innerHTML = `Total por cobrar: <b style="color: var(--warning, #d97706);">${formatMoney(totalPorCobrar)}</b>`;
+    }
+
+    if (!prestamos.length) {
+        return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin préstamos registrados.</p>';
+    }
+
+    container.innerHTML = prestamos.map(p => {
+        const cuentaObj = cuentas.find(c => c.id === p.cuenta_id);
+        const cuentaNombre = cuentaObj ? cuentaObj.nombre : 'Cuenta';
+        const badge = p.cobrado 
+            ? '<span class="badge-prestamo-cobrado">✔ Cobrado</span>' 
+            : '<span class="badge-prestamo-pendiente">⏳ Pendiente</span>';
+
+        return `
+            <div class="item-row" style="flex-direction: column; align-items: stretch; gap: 0.35rem; background: ${p.cobrado ? '#f0fdf4' : '#fffbeb'}; border: 1px solid ${p.cobrado ? '#bbf7d0' : '#fde68a'};">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <p style="font-weight: 700; font-size: 0.88rem; color: #1e293b;">
+                            👤 ${p.a_quien} <span style="font-weight: 400; font-size: 0.8rem; color: var(--subtext);">- ${p.concepto}</span>
+                        </p>
+                    </div>
+                    <span style="font-weight: 800; font-size: 0.9rem; color: #b45309;">${formatMoney(p.monto)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--subtext);">
+                    <span>📅 Prestado: ${formatDateDisplay(p.fecha)} ${p.fecha_pago ? `&bull; ⏳ A pagar: <b>${formatDateDisplay(p.fecha_pago)}</b>` : ''} &bull; Origen: ${cuentaNombre}</span>
+                    <div style="display: flex; align-items: center; gap: 0.3rem;">
+                        ${badge}
+                        ${!p.cobrado ? `
+                            <button onclick="abrirModalCobrarPrestamo('${p.id}')" style="background: var(--success); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 0.4rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;">💰 Cobrar</button>
+                        ` : ''}
+                        <button onclick="eliminarPrestamo('${p.id}')" style="background: none; border: none; color: #94a3b8; font-size: 0.8rem; cursor: pointer;" title="Eliminar registro">🗑️</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -154,15 +309,38 @@ function renderizarBolsillos() {
     }).join('');
 }
 
+/* RENDERIZADO DE PROYECCIONES FILTRADAS POR EL PERIODO SELECCIONADO */
 function renderizarProyecciones() {
     const container = document.getElementById('lista-proyecciones');
-    if (!proyecciones.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin proyecciones registradas.</p>';
+    const tituloEl = document.getElementById('titulo-proyecciones-pendientes');
+    if (!container) return;
 
-    container.innerHTML = proyecciones.map(p => {
+    const [selYear, selMonth] = mesSeleccionado.split('-').map(Number);
+    const diasEnMes = new Date(selYear, selMonth, 0).getDate();
+    const inicioPeriodoStr = subperiodoSeleccionado === 'q2' ? `${mesSeleccionado}-16` : `${mesSeleccionado}-01`;
+    const finPeriodoStr = subperiodoSeleccionado === 'q1' ? `${mesSeleccionado}-15` : `${mesSeleccionado}-${String(diasEnMes).padStart(2, '0')}`;
+
+    const subLabel = subperiodoSeleccionado === 'mes' ? 'Mes Completo' : (subperiodoSeleccionado === 'q1' ? '1ra Quincena' : '2da Quincena');
+    const mesNombre = MESES_NOMBRES[selMonth - 1];
+    if (tituloEl) {
+        tituloEl.innerText = `Proyecciones: ${mesNombre} (${subLabel})`;
+    }
+
+    const proyeccionesPeriodo = proyecciones.filter(p => {
+        if (!p.fecha) return false;
+        const fechaStr = p.fecha.includes('T') ? p.fecha.split('T')[0] : p.fecha;
+        return fechaStr >= inicioPeriodoStr && fechaStr <= finPeriodoStr;
+    });
+
+    if (!proyeccionesPeriodo.length) {
+        return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext); text-align: center; padding: 1rem 0;">Sin proyecciones registradas para este periodo.</p>';
+    }
+
+    container.innerHTML = proyeccionesPeriodo.map(p => {
         const esIngreso = p.tipo === 'ingreso';
         const color = esIngreso ? 'var(--success)' : 'var(--danger)';
         const signo = esIngreso ? '+' : '-';
-        const nombreCuenta = p.cuentas ? p.cuentas.nombre : 'Sin cuenta';
+        const nombreCuenta = p.cuentas ? p.cuentas.nombre : (cuentas.find(c => c.id === p.cuenta_id)?.nombre || 'Sin cuenta');
 
         return `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;">
@@ -172,8 +350,8 @@ function renderizarProyecciones() {
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.4rem;">
                     <span style="font-weight: 700; color: ${color};">${signo}${formatMoney(p.monto)}</span>
-                    <button onclick="abrirModalEjecutarProyeccion('${p.id}', '${p.tipo}', ${p.monto}, '${p.concepto}', '${p.fecha}', '${p.cuenta_id}')" style="background: var(--success); color: white; border: none; padding: 0.25rem 0.4rem; border-radius: 0.4rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;">✔</button>
-                    <button onclick="anularProyeccion('${p.id}')" style="background: #cbd5e1; color: #334155; border: none; padding: 0.25rem 0.4rem; border-radius: 0.4rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;">✖</button>
+                    <button onclick="abrirModalEjecutarProyeccion('${p.id}', '${p.tipo}', ${p.monto}, '${p.concepto}', '${p.fecha}', '${p.cuenta_id}')" style="background: var(--success); color: white; border: none; padding: 0.25rem 0.4rem; border-radius: 0.4rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;" title="Confirmar movimiento real">✔</button>
+                    <button onclick="anularProyeccion('${p.id}')" style="background: #cbd5e1; color: #334155; border: none; padding: 0.25rem 0.4rem; border-radius: 0.4rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;" title="Anular proyección">✖</button>
                 </div>
             </div>
         `;
@@ -204,36 +382,89 @@ function generarHTMLMovimiento(t) {
     `;
 }
 
+/* CÁLCULO DE SALDOS GLOBALES Y PROYECCIONES SEGÚN EL PERIODO (MES / QUINCENA) */
 function actualizarSaldosGlobales() {
-    // 1. Cálculos de Dinero Real (Actual)
-    const totalDisp = cuentas.filter(c => c.tipo !== 'credito').reduce((acc, c) => acc + Number(c.saldo_actual), 0);
-    const totalDeudaActual = cuentas.filter(c => c.tipo === 'credito').reduce((acc, c) => acc + Number(c.saldo_actual), 0);
+    if (!mesSeleccionado) inicializarSelectorMeses();
+
+    const [selYear, selMonth] = mesSeleccionado.split('-').map(Number);
+    const hoyStr = getTodayString();
+    const diasEnMes = new Date(selYear, selMonth, 0).getDate();
+
+    const inicioPeriodoStr = subperiodoSeleccionado === 'q2' ? `${mesSeleccionado}-16` : `${mesSeleccionado}-01`;
+    const finPeriodoStr = subperiodoSeleccionado === 'q1' ? `${mesSeleccionado}-15` : `${mesSeleccionado}-${String(diasEnMes).padStart(2, '0')}`;
+
+    // 1. Dinero Real Actual (al día de hoy)
+    const totalDispReal = cuentas.filter(c => c.tipo !== 'credito').reduce((acc, c) => acc + Number(c.saldo_actual), 0);
+    const totalDeudaReal = cuentas.filter(c => c.tipo === 'credito').reduce((acc, c) => acc + Number(c.saldo_actual), 0);
     const totalAhorro = bolsillos.reduce((acc, b) => acc + Number(b.saldo_actual), 0);
-    
-    // 2. Cálculos de Proyecciones Finales
-    let dispProyectado = totalDisp;
-    let deudaProyectada = totalDeudaActual;
+
+    // 2. Simulación hacia adelante hasta el inicio del periodo
+    let dispInicioPeriodo = totalDispReal;
+    let deudaInicioPeriodo = totalDeudaReal;
+
+    if (inicioPeriodoStr > hoyStr) {
+        proyecciones.forEach(p => {
+            const fechaStr = p.fecha ? (p.fecha.includes('T') ? p.fecha.split('T')[0] : p.fecha) : '';
+            if (fechaStr >= hoyStr && fechaStr < inicioPeriodoStr) {
+                const cuenta = cuentas.find(c => c.id === p.cuenta_id);
+                if (cuenta) {
+                    if (cuenta.tipo === 'credito') {
+                        if (p.tipo === 'egreso') deudaInicioPeriodo += Number(p.monto);
+                        if (p.tipo === 'ingreso') deudaInicioPeriodo -= Number(p.monto);
+                    } else {
+                        if (p.tipo === 'ingreso') dispInicioPeriodo += Number(p.monto);
+                        if (p.tipo === 'egreso') dispInicioPeriodo -= Number(p.monto);
+                    }
+                }
+            }
+        });
+    }
+
+    if (deudaInicioPeriodo < 0) deudaInicioPeriodo = 0;
+
+    // 3. Proyecciones que caen DENTRO del periodo seleccionado
+    let dispFinal = dispInicioPeriodo;
+    let deudaFinal = deudaInicioPeriodo;
 
     proyecciones.forEach(p => {
-        const cuenta = cuentas.find(c => c.id === p.cuenta_id);
-        if (cuenta) {
-            if (cuenta.tipo === 'credito') {
-                if (p.tipo === 'egreso') deudaProyectada += Number(p.monto);
-                if (p.tipo === 'ingreso') deudaProyectada -= Number(p.monto);
-            } else {
-                if (p.tipo === 'ingreso') dispProyectado += Number(p.monto);
-                if (p.tipo === 'egreso') dispProyectado -= Number(p.monto);
+        const fechaStr = p.fecha ? (p.fecha.includes('T') ? p.fecha.split('T')[0] : p.fecha) : '';
+        const entraEnPeriodo = (fechaStr >= inicioPeriodoStr && fechaStr <= finPeriodoStr);
+
+        if (entraEnPeriodo) {
+            const cuenta = cuentas.find(c => c.id === p.cuenta_id);
+            if (cuenta) {
+                if (cuenta.tipo === 'credito') {
+                    if (p.tipo === 'egreso') deudaFinal += Number(p.monto);
+                    if (p.tipo === 'ingreso') deudaFinal -= Number(p.monto);
+                } else {
+                    if (p.tipo === 'ingreso') dispFinal += Number(p.monto);
+                    if (p.tipo === 'egreso') dispFinal -= Number(p.monto);
+                }
             }
         }
     });
 
-    if (deudaProyectada < 0) deudaProyectada = 0;
+    if (deudaFinal < 0) deudaFinal = 0;
 
-    // 3. Pintar en pantalla
-    document.getElementById('total-disponible').innerText = formatMoney(totalDisp);
+    // 4. Actualizar textos e indicadores en la vista
+    const subLabel = subperiodoSeleccionado === 'mes' ? 'Mes Completo' : (subperiodoSeleccionado === 'q1' ? '1ra Quincena' : '2da Quincena');
+    const mesNombre = MESES_NOMBRES[selMonth - 1];
+
+    const labelReal = document.getElementById('label-disponible-real');
+    if (labelReal) {
+        const esMesActual = (mesSeleccionado === hoyStr.substring(0, 7));
+        labelReal.innerText = esMesActual ? 'Disponible Real (Hoy)' : 'Disponible al Inicio';
+    }
+
+    const tituloFuturo = document.getElementById('titulo-futuro-proyeccion');
+    if (tituloFuturo) {
+        tituloFuturo.innerText = `🔮 Futuro: ${mesNombre} ${selYear} (${subLabel})`;
+    }
+
+    document.getElementById('total-disponible').innerText = formatMoney(dispInicioPeriodo);
     document.getElementById('total-ahorrado').innerText = formatMoney(totalAhorro);
-    document.getElementById('proy-disponible-final').innerText = formatMoney(dispProyectado);
-    document.getElementById('proy-credito-final').innerText = formatMoney(deudaProyectada);
+    document.getElementById('proy-disponible-final').innerText = formatMoney(dispFinal);
+    document.getElementById('proy-credito-final').innerText = formatMoney(deudaFinal);
 }
 
 /* FILTROS EXCLUSIVOS DEL MÓDULO MOVIMIENTOS */
@@ -342,6 +573,51 @@ function abrirModalCuenta() {
     abrirModal('modal-cuenta');
 }
 
+function abrirModalEditarCuenta(id) {
+    const c = cuentas.find(acc => acc.id === id);
+    if (!c) return;
+
+    document.getElementById('form-editar-cuenta').reset();
+    document.getElementById('edit-cuenta-id').value = c.id;
+    document.getElementById('edit-cuenta-tipo').value = c.tipo;
+    document.getElementById('edit-cuenta-nombre').value = c.nombre;
+
+    const divCredito = document.getElementById('edit-div-credito');
+    if (c.tipo === 'credito') {
+        divCredito.classList.remove('hidden');
+        document.getElementById('edit-cuenta-cupo').value = c.cupo_total ? Number(c.cupo_total).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "0";
+        const meta = tarjetasMetadata[c.id] || {};
+        document.getElementById('edit-cuenta-dia-pago').value = meta.dia_pago || '17 de cada mes';
+        document.getElementById('edit-cuenta-periodo-corte').value = meta.periodo_corte || 'Entre 28 y 28 de cada mes';
+    } else {
+        divCredito.classList.add('hidden');
+    }
+
+    abrirModal('modal-editar-cuenta');
+}
+
+async function confirmarEditarCuenta(e) {
+    e.preventDefault();
+    const id = document.getElementById('edit-cuenta-id').value;
+    const tipo = document.getElementById('edit-cuenta-tipo').value;
+    const nombre = document.getElementById('edit-cuenta-nombre').value;
+
+    if (tipo === 'credito') {
+        const cupo = parseInput('edit-cuenta-cupo');
+        const dia_pago = document.getElementById('edit-cuenta-dia-pago').value;
+        const periodo_corte = document.getElementById('edit-cuenta-periodo-corte').value;
+
+        await db.from('cuentas').update({ nombre, cupo_total: cupo }).eq('id', id);
+        tarjetasMetadata[id] = { dia_pago, periodo_corte };
+        localStorage.setItem('mis_finanzas_tarjetas_meta', JSON.stringify(tarjetasMetadata));
+    } else {
+        await db.from('cuentas').update({ nombre }).eq('id', id);
+    }
+
+    cerrarModal('modal-editar-cuenta');
+    cargarDatos();
+}
+
 function abrirModalBolsillo() {
     document.getElementById('form-bolsillo').reset();
     abrirModal('modal-bolsillo');
@@ -359,7 +635,6 @@ function abrirModalProyeccion() {
     document.getElementById('form-proyeccion').reset();
     document.getElementById('proy-fecha').value = getTodayString();
     
-    // Poblamos selector de cuenta para enlazar la proyección
     const selectCuenta = document.getElementById('proy-cuenta');
     selectCuenta.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
     
@@ -393,12 +668,119 @@ function abrirModalEjecutarProyeccion(id, tipo, monto, concepto, fechaProy, cuen
     const selectCuenta = document.getElementById('proy-exec-cuenta');
     selectCuenta.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
     
-    // Seleccionar por defecto la cuenta que se enlazó al proyectar
     if (cuenta_id_original) {
         selectCuenta.value = cuenta_id_original;
     }
 
     abrirModal('modal-ejecutar-proyeccion');
+}
+
+/* MODALES Y LÓGICA DE PRÉSTAMOS */
+function abrirModalPrestamo() {
+    document.getElementById('form-prestamo').reset();
+    const select = document.getElementById('prestamo-cuenta');
+    select.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
+    abrirModal('modal-prestamo');
+}
+
+async function guardarPrestamo(e) {
+    e.preventDefault();
+    const a_quien = document.getElementById('prestamo-a-quien').value.trim();
+    const concepto = document.getElementById('prestamo-concepto').value.trim();
+    const monto = parseInput('prestamo-monto');
+    const cuenta_id = document.getElementById('prestamo-cuenta').value;
+    const fecha_pago = document.getElementById('prestamo-fecha-pago').value || null;
+    const fecha = getTodayString();
+
+    if (monto <= 0) {
+        alert("Por favor ingresa un monto válido.");
+        return;
+    }
+
+    // 1. Insertar transacción automática como egreso
+    const conceptoTx = `🤝 Préstamo a ${a_quien}: ${concepto}`;
+    await db.from('transacciones').insert([{ tipo: 'egreso', monto, concepto: conceptoTx, cuenta_id, fecha }]);
+
+    // 2. Descontar de la cuenta
+    const cuenta = cuentas.find(c => c.id === cuenta_id);
+    if (cuenta) {
+        const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) + monto : Number(cuenta.saldo_actual) - monto;
+        await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
+    }
+
+    // 3. Guardar en el registro de préstamos
+    const nuevoPrestamo = {
+        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'p_' + Date.now(),
+        a_quien,
+        concepto,
+        monto,
+        cuenta_id,
+        fecha,
+        fecha_pago,
+        cobrado: false,
+        fecha_cobrado: null
+    };
+
+    prestamos.unshift(nuevoPrestamo);
+    localStorage.setItem('mis_finanzas_prestamos', JSON.stringify(prestamos));
+
+    cerrarModal('modal-prestamo');
+    cargarDatos();
+}
+
+function abrirModalCobrarPrestamo(id) {
+    const p = prestamos.find(item => item.id === id);
+    if (!p) return;
+
+    document.getElementById('form-cobrar-prestamo').reset();
+    document.getElementById('cobro-prestamo-id').value = p.id;
+    document.getElementById('cobro-prestamo-monto').value = p.monto;
+    document.getElementById('cobro-prestamo-a-quien').value = p.a_quien;
+    document.getElementById('cobro-fecha').value = getTodayString();
+    document.getElementById('cobro-prestamo-resumen').innerText = `Vas a recibir ${formatMoney(p.monto)} devueltos por "${p.a_quien}".`;
+
+    const select = document.getElementById('cobro-cuenta-destino');
+    select.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
+
+    abrirModal('modal-cobrar-prestamo');
+}
+
+async function confirmarCobroPrestamo(e) {
+    e.preventDefault();
+    const id = document.getElementById('cobro-prestamo-id').value;
+    const monto = Number(document.getElementById('cobro-prestamo-monto').value);
+    const a_quien = document.getElementById('cobro-prestamo-a-quien').value;
+    const cuenta_id = document.getElementById('cobro-cuenta-destino').value;
+    const fecha = document.getElementById('cobro-fecha').value;
+
+    // 1. Insertar transacción automática como ingreso
+    const conceptoTx = `💰 Cobro de préstamo (${a_quien})`;
+    await db.from('transacciones').insert([{ tipo: 'ingreso', monto, concepto: conceptoTx, cuenta_id, fecha }]);
+
+    // 2. Sumar saldo a la cuenta
+    const cuenta = cuentas.find(c => c.id === cuenta_id);
+    if (cuenta) {
+        const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) - monto : Number(cuenta.saldo_actual) + monto;
+        await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
+    }
+
+    // 3. Actualizar estado del préstamo
+    const index = prestamos.findIndex(item => item.id === id);
+    if (index !== -1) {
+        prestamos[index].cobrado = true;
+        prestamos[index].fecha_cobrado = fecha;
+        localStorage.setItem('mis_finanzas_prestamos', JSON.stringify(prestamos));
+    }
+
+    cerrarModal('modal-cobrar-prestamo');
+    cargarDatos();
+}
+
+function eliminarPrestamo(id) {
+    if (!confirm("¿Deseas eliminar este registro de préstamo del historial?")) return;
+    prestamos = prestamos.filter(p => p.id !== id);
+    localStorage.setItem('mis_finanzas_prestamos', JSON.stringify(prestamos));
+    renderizarPrestamos();
 }
 
 function seleccionarTipoCuenta(tipo) {
@@ -483,9 +865,18 @@ async function eliminarTransaccion(id, tipo, monto, cuentaId, bolsilloId) {
 
 async function guardarCuenta(e) {
     e.preventDefault();
-    const nombre = document.getElementById('cuenta-nombre').value;
+    const nombre = document.getElementById('cuenta-nombre').value.trim();
     const cupo_total = tipoCuentaSeleccionado === 'credito' ? parseInput('cuenta-cupo') : 0;
-    await db.from('cuentas').insert([{ nombre, tipo: tipoCuentaSeleccionado, cupo_total, saldo_actual: 0 }]);
+    
+    const { data, error } = await db.from('cuentas').insert([{ nombre, tipo: tipoCuentaSeleccionado, cupo_total, saldo_actual: 0 }]).select();
+    
+    if (tipoCuentaSeleccionado === 'credito' && data && data.length > 0) {
+        const dia_pago = document.getElementById('cuenta-dia-pago').value.trim() || '17 de cada mes';
+        const periodo_corte = document.getElementById('cuenta-periodo-corte').value.trim() || 'Entre 28 y 28 de cada mes';
+        tarjetasMetadata[data[0].id] = { dia_pago, periodo_corte };
+        localStorage.setItem('mis_finanzas_tarjetas_meta', JSON.stringify(tarjetasMetadata));
+    }
+
     cerrarModal('modal-cuenta');
     cargarDatos();
 }
@@ -551,7 +942,7 @@ async function guardarProyeccion(e) {
     const concepto = document.getElementById('proy-concepto').value;
     const monto = parseInput('proy-monto');
     const fecha = document.getElementById('proy-fecha').value;
-    const cuenta_id = document.getElementById('proy-cuenta').value; // Nueva conexión
+    const cuenta_id = document.getElementById('proy-cuenta').value;
 
     await db.from('proyecciones').insert([{ tipo: tipoProyeccionSeleccionado, concepto, monto, fecha, cuenta_id }]);
     cerrarModal('modal-proyeccion');
@@ -570,11 +961,14 @@ async function confirmarEjecutarProyeccion(e) {
     await db.from('transacciones').insert([{ tipo, monto, concepto, cuenta_id, fecha }]);
 
     const cuenta = cuentas.find(c => c.id === cuenta_id);
-    if (tipo === 'ingreso') {
-        await db.from('cuentas').update({ saldo_actual: Number(cuenta.saldo_actual) + monto }).eq('id', cuenta_id);
-    } else if (tipo === 'egreso') {
-        const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) + monto : Number(cuenta.saldo_actual) - monto;
-        await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
+    if (cuenta) {
+        if (tipo === 'ingreso') {
+            const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) - monto : Number(cuenta.saldo_actual) + monto;
+            await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
+        } else if (tipo === 'egreso') {
+            const nuevoSaldo = cuenta.tipo === 'credito' ? Number(cuenta.saldo_actual) + monto : Number(cuenta.saldo_actual) - monto;
+            await db.from('cuentas').update({ saldo_actual: nuevoSaldo }).eq('id', cuenta_id);
+        }
     }
 
     await db.from('proyecciones').delete().eq('id', id);
