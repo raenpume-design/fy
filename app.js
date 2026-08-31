@@ -38,28 +38,38 @@ function parseInput(id) {
     return Number(val) || 0;
 }
 
-/* NAVEGACIÓN AWP EXCLUSIVA */
-function cambiarVista(vista) {
+/* NAVEGACIÓN Y RUTAS (HTML5 History API) */
+function navegarA(ruta, push = true) {
+    if (push && window.location.pathname !== ruta) {
+        history.pushState({ ruta }, '', ruta);
+    }
+
     const viewDash = document.getElementById('view-dashboard');
     const viewMov = document.getElementById('view-movimientos');
     const btnDash = document.getElementById('nav-dashboard');
     const btnMov = document.getElementById('nav-movimientos');
 
-    if (vista === 'dashboard') {
-        viewDash.classList.remove('hidden');
-        viewMov.classList.add('hidden');
-        btnDash.classList.add('active');
-        btnMov.classList.remove('active');
-        window.scrollTo(0, 0);
-    } else {
+    const esHistorial = ruta.includes('historial');
+
+    if (esHistorial) {
         viewDash.classList.add('hidden');
         viewMov.classList.remove('hidden');
         btnDash.classList.remove('active');
         btnMov.classList.add('active');
-        window.scrollTo(0, 0);
         filtrarMovimientos(); 
+    } else {
+        viewDash.classList.remove('hidden');
+        viewMov.classList.add('hidden');
+        btnDash.classList.add('active');
+        btnMov.classList.remove('active');
     }
+    window.scrollTo(0, 0);
 }
+
+// Escuchar evento "atrás/adelante" del navegador
+window.addEventListener('popstate', () => {
+    navegarA(window.location.pathname, false);
+});
 
 /* CARGA DE DATOS */
 async function cargarDatos() {
@@ -67,7 +77,6 @@ async function cargarDatos() {
 
     const { data: resCuentas } = await db.from('cuentas').select('*');
     const { data: resBolsillos } = await db.from('bolsillos').select('*');
-    // Ahora traemos el nombre de la cuenta asociada a la proyección
     const { data: resProy } = await db.from('proyecciones').select('*, cuentas(nombre, tipo)').order('fecha', { ascending: true });
     const { data: resTx } = await db.from('transacciones').select('*, cuentas(nombre), bolsillos(nombre)').order('fecha', { ascending: false });
 
@@ -81,6 +90,7 @@ async function cargarDatos() {
     renderizarProyecciones();
     generarBotonesFiltroCuentas();
     actualizarSaldosGlobales();
+    renderizarMovimientosRecientes();
     filtrarMovimientos();
 }
 
@@ -179,13 +189,25 @@ function generarHTMLMovimiento(t) {
     `;
 }
 
+/* RENDERIZAR SÓLO LOS 5 MOVIMIENTOS MÁS RECIENTES EN EL INICIO */
+function renderizarMovimientosRecientes() {
+    const container = document.getElementById('lista-movimientos-recientes');
+    if (!container) return;
+
+    const recientes = todasLasTransacciones.slice(0, 5);
+
+    if (!recientes.length) {
+        container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">No hay movimientos recientes.</p>';
+    } else {
+        container.innerHTML = recientes.map(t => generarHTMLMovimiento(t)).join('');
+    }
+}
+
 function actualizarSaldosGlobales() {
-    // 1. Cálculos de Dinero Real (Actual)
     const totalDisp = cuentas.filter(c => c.tipo !== 'credito').reduce((acc, c) => acc + Number(c.saldo_actual), 0);
     const totalDeudaActual = cuentas.filter(c => c.tipo === 'credito').reduce((acc, c) => acc + Number(c.saldo_actual), 0);
     const totalAhorro = bolsillos.reduce((acc, b) => acc + Number(b.saldo_actual), 0);
     
-    // 2. Cálculos de Proyecciones Finales
     let dispProyectado = totalDisp;
     let deudaProyectada = totalDeudaActual;
 
@@ -193,26 +215,24 @@ function actualizarSaldosGlobales() {
         const cuenta = cuentas.find(c => c.id === p.cuenta_id);
         if (cuenta) {
             if (cuenta.tipo === 'credito') {
-                if (p.tipo === 'egreso') deudaProyectada += Number(p.monto); // Comprar algo con TC sube la deuda
-                if (p.tipo === 'ingreso') deudaProyectada -= Number(p.monto); // Pagar la TC baja la deuda
+                if (p.tipo === 'egreso') deudaProyectada += Number(p.monto);
+                if (p.tipo === 'ingreso') deudaProyectada -= Number(p.monto);
             } else {
-                if (p.tipo === 'ingreso') dispProyectado += Number(p.monto); // Ingreso a débito suma saldo
-                if (p.tipo === 'egreso') dispProyectado -= Number(p.monto);  // Egreso a débito resta saldo
+                if (p.tipo === 'ingreso') dispProyectado += Number(p.monto);
+                if (p.tipo === 'egreso') dispProyectado -= Number(p.monto);
             }
         }
     });
 
-    // Asegurar que la deuda no se vuelva negativa visualmente
     if (deudaProyectada < 0) deudaProyectada = 0;
 
-    // 3. Pintar en pantalla
     document.getElementById('total-disponible').innerText = formatMoney(totalDisp);
     document.getElementById('total-ahorrado').innerText = formatMoney(totalAhorro);
     document.getElementById('proy-disponible-final').innerText = formatMoney(dispProyectado);
     document.getElementById('proy-credito-final').innerText = formatMoney(deudaProyectada);
 }
 
-/* FILTROS EXCLUSIVOS DEL MÓDULO MOVIMIENTOS */
+/* FILTROS EXCLUSIVOS DEL MÓDULO DE HISTORIAL */
 function setFiltroFecha(fecha) {
     filtroFechaActual = fecha;
     ['todas', 'hoy', 'mes'].forEach(f => document.getElementById(`f-fecha-${f}`).classList.remove('active'));
@@ -235,7 +255,8 @@ function setFiltroCuenta(id) {
 }
 
 function filtrarMovimientos() {
-    const busqueda = document.getElementById('filter-search').value.toLowerCase().trim();
+    const inputSearch = document.getElementById('filter-search');
+    const busqueda = inputSearch ? inputSearch.value.toLowerCase().trim() : '';
     
     const filtrados = todasLasTransacciones.filter(t => {
         const busquedaMatch = t.concepto.toLowerCase().includes(busqueda) || t.monto.toString().includes(busqueda);
@@ -256,10 +277,12 @@ function filtrarMovimientos() {
     });
 
     const container = document.getElementById('lista-movimientos-completa');
-    if (!filtrados.length) {
-        container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">No hay movimientos que coincidan con los filtros.</p>';
-    } else {
-        container.innerHTML = filtrados.map(t => generarHTMLMovimiento(t)).join('');
+    if (container) {
+        if (!filtrados.length) {
+            container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">No hay movimientos que coincidan con los filtros.</p>';
+        } else {
+            container.innerHTML = filtrados.map(t => generarHTMLMovimiento(t)).join('');
+        }
     }
 }
 
@@ -310,7 +333,6 @@ function abrirModalProyeccion() {
     document.getElementById('form-proyeccion').reset();
     document.getElementById('proy-fecha').value = getTodayString();
     
-    // Poblamos selector de cuenta para enlazar la proyección
     const selectCuenta = document.getElementById('proy-cuenta');
     selectCuenta.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
     
@@ -344,7 +366,6 @@ function abrirModalEjecutarProyeccion(id, tipo, monto, concepto, fechaProy, cuen
     const selectCuenta = document.getElementById('proy-exec-cuenta');
     selectCuenta.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
     
-    // Seleccionar por defecto la cuenta que se enlazó al proyectar
     if (cuenta_id_original) {
         selectCuenta.value = cuenta_id_original;
     }
@@ -497,7 +518,7 @@ async function guardarProyeccion(e) {
     const concepto = document.getElementById('proy-concepto').value;
     const monto = parseInput('proy-monto');
     const fecha = document.getElementById('proy-fecha').value;
-    const cuenta_id = document.getElementById('proy-cuenta').value; // Nueva conexión
+    const cuenta_id = document.getElementById('proy-cuenta').value;
 
     await db.from('proyecciones').insert([{ tipo: tipoProyeccionSeleccionado, concepto, monto, fecha, cuenta_id }]);
     cerrarModal('modal-proyeccion');
@@ -533,4 +554,50 @@ async function anularProyeccion(id) {
     cargarDatos();
 }
 
-window.onload = cargarDatos;
+window.onload = async () => {
+    await cargarDatos();
+    // Detectar ruta actual en la barra del navegador al recargar
+    navegarA(window.location.pathname, false);
+};
+3. sw.js
+(Service worker ajustado para permitir la navegación sin dar errores 404)
+
+JavaScript
+const CACHE_NAME = 'finanzas-app-v3';
+const ASSETS = [
+  '/',
+  '/index.html',
+  '/styles.css',
+  '/app.js',
+  '/manifest.json'
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((res) => {
+      if (res) return res;
+      return fetch(e.request).catch(() => {
+        if (e.request.mode === 'navigate') {
+          return caches.match('/index.html');
+        }
+      });
+    })
+  );
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      );
+    })
+  );
+});
