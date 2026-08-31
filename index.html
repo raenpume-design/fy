@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finanzas Personales</title>
+    <!-- 👇 ESTAS DOS LÍNEAS SON VITALES PARA EL DISEÑO Y LA BASE DE DATOS 👇 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -11,8 +12,9 @@
 
     <!-- CONFIGURACIÓN SUPABASE -->
     <script>
-        const SUPABASE_URL = "https://fpweccrefuiznuugkngm.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_3YKhDoPtMQe3VRyOROt9xQ_ZjuqeT7u";
+        // IMPORTANTE: Pon tus llaves aquí, manteniendo las comillas
+        const SUPABASE_URL = "TU_SUPABASE_URL_AQUI";
+        const SUPABASE_KEY = "TU_SUPABASE_ANON_KEY_AQUI";
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     </script>
 
@@ -51,7 +53,7 @@
             </button>
         </section>
 
-        <!-- MODULO: BOLSILLOS DE AHORRO (ESTILO BANCOLOMBIA) -->
+        <!-- MODULO: BOLSILLOS DE AHORRO -->
         <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="font-bold text-slate-900">Mis Bolsillos</h2>
