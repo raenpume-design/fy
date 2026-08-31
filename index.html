@@ -15,17 +15,30 @@
 <body>
 
     <header class="header">
-        <div style="max-width: 500px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
-            <h1 style="font-size: 1.25rem; font-weight: 800;">Mis Finanzas</h1>
-            <span class="badge">En Vivo</span>
+        <div style="max-width: 500px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+            <h1 style="font-size: 1.15rem; font-weight: 800;">Mis Finanzas</h1>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <select id="filtro-mes-select" class="period-select" onchange="cambiarMesPeriodo(this.value)">
+                    <!-- Opciones de meses generadas dinámicamente -->
+                </select>
+            </div>
         </div>
     </header>
 
     <!-- VISTA 1: DASHBOARD PRINCIPAL -->
     <main id="view-dashboard" class="container">
+        <!-- SELECTOR DE QUINCENA / MES -->
+        <section class="period-container">
+            <div class="period-pills">
+                <button class="period-pill active" id="pill-periodo-mes" onclick="setSubperiodo('mes')">Mes Completo</button>
+                <button class="period-pill" id="pill-periodo-q1" onclick="setSubperiodo('q1')">1ra Quincena (1-15)</button>
+                <button class="period-pill" id="pill-periodo-q2" onclick="setSubperiodo('q2')">2da Quincena (16-Fin)</button>
+            </div>
+        </section>
+
         <section class="grid-2">
             <div class="card-dark">
-                <p class="sub">Disponible Real</p>
+                <p class="sub" id="label-disponible-real">Disponible Real</p>
                 <p id="total-disponible" class="val">$0</p>
             </div>
             <div class="card-green">
@@ -34,10 +47,10 @@
             </div>
         </section>
 
-        <!-- NUEVO RESUMEN PROYECTADO -->
+        <!-- RESUMEN PROYECTADO SEGÚN EL PERIODO SELECCIONADO -->
         <section class="card" style="background: #f8fafc; border-color: #e2e8f0;">
             <div class="section-header" style="margin-bottom: 0.5rem;">
-                <h2 class="section-title" style="color: #0f172a;">🔮 Futuro (Tras Proyecciones)</h2>
+                <h2 class="section-title" id="titulo-futuro-proyeccion" style="color: #0f172a;">🔮 Futuro (Tras Proyecciones)</h2>
             </div>
             <div class="grid-2">
                 <div>
@@ -51,11 +64,13 @@
             </div>
         </section>
 
-        <section class="grid-4">
+        <!-- BOTONES DE ACCIÓN RÁPIDA (5 ACCIONES) -->
+        <section class="grid-5">
             <button onclick="abrirModalTransaccion('ingreso')" class="btn-action btn-ingreso"><span>↓</span> + Ingreso</button>
             <button onclick="abrirModalTransaccion('egreso')" class="btn-action btn-egreso"><span>↑</span> - Egreso</button>
             <button onclick="abrirModalTransaccion('ahorro')" class="btn-action btn-bolsillo"><span>🔒</span> Bolsillo</button>
             <button onclick="abrirModalProyeccion()" class="btn-action btn-proyectado"><span>🔮</span> Proyectar</button>
+            <button onclick="abrirModalPrestamo()" class="btn-action btn-prestamo"><span>🤝</span> Préstamo</button>
         </section>
 
         <section class="card">
@@ -64,6 +79,18 @@
                 <button onclick="abrirModalCuenta()" class="btn-link">+ Agregar Cuenta</button>
             </div>
             <div id="lista-cuentas"><p style="font-size: 0.8rem; color: var(--subtext);">Cargando cuentas...</p></div>
+        </section>
+
+        <!-- SECCIÓN DE PRÉSTAMOS -->
+        <section class="card">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">🤝 Mis Préstamos</h2>
+                    <p id="resumen-prestamos-total" style="font-size: 0.7rem; color: var(--subtext); font-weight: 600; margin-top: 2px;">Por cobrar: $0</p>
+                </div>
+                <button onclick="abrirModalPrestamo()" class="btn-link">+ Prestar</button>
+            </div>
+            <div id="lista-prestamos"><p style="font-size: 0.8rem; color: var(--subtext);">Sin préstamos registrados.</p></div>
         </section>
 
         <section class="card">
@@ -75,7 +102,9 @@
         </section>
 
         <section class="card">
-            <h2 class="section-title" style="margin-bottom: 0.75rem;">Proyecciones Pendientes</h2>
+            <div class="section-header">
+                <h2 class="section-title" id="titulo-proyecciones-pendientes">Proyecciones del Periodo</h2>
+            </div>
             <div id="lista-proyecciones"><p style="font-size: 0.8rem; color: var(--subtext);">Sin proyecciones registradas.</p></div>
         </section>
     </main>
@@ -171,7 +200,7 @@
             <form id="form-cuenta" onsubmit="guardarCuenta(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <div class="input-group">
                     <label>Nombre</label>
-                    <input type="text" id="cuenta-nombre" required placeholder="Ej. Bancolombia, Nubank, Efectivo">
+                    <input type="text" id="cuenta-nombre" required placeholder="Ej. Bancolombia, NU, Efectivo">
                 </div>
                 <div class="input-group">
                     <label>Tipo de Cuenta</label>
@@ -182,13 +211,55 @@
                         <button type="button" class="btn-option" id="opt-credito" onclick="seleccionarTipoCuenta('credito')">Crédito</button>
                     </div>
                 </div>
-                <div id="div-cupo" class="input-group hidden">
-                    <label>Cupo Total ($)</label>
-                    <input type="text" inputmode="numeric" id="cuenta-cupo" placeholder="0" oninput="formatInput(this)">
+                <div id="div-cupo" class="input-group hidden" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="input-group">
+                        <label>Cupo Total ($)</label>
+                        <input type="text" inputmode="numeric" id="cuenta-cupo" placeholder="0" oninput="formatInput(this)">
+                    </div>
+                    <div class="input-group">
+                        <label>Fecha Límite de Pago</label>
+                        <input type="text" id="cuenta-dia-pago" placeholder="Ej. 17 de cada mes">
+                    </div>
+                    <div class="input-group">
+                        <label>Periodo de Facturación / Corte</label>
+                        <input type="text" id="cuenta-periodo-corte" placeholder="Ej. Entre 28 y 28 de cada mes">
+                    </div>
                 </div>
                 <div class="btn-row">
                     <button type="button" onclick="cerrarModal('modal-cuenta')" class="btn-secondary">Cancelar</button>
                     <button type="submit" class="btn-primary">Crear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-editar-cuenta" class="modal hidden">
+        <div class="modal-body">
+            <h3 id="modal-editar-cuenta-titulo" style="font-size: 1.1rem; font-weight: 700;">Editar Cuenta / Tarjeta</h3>
+            <form id="form-editar-cuenta" onsubmit="confirmarEditarCuenta(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <input type="hidden" id="edit-cuenta-id">
+                <input type="hidden" id="edit-cuenta-tipo">
+                <div class="input-group">
+                    <label>Nombre de la Cuenta</label>
+                    <input type="text" id="edit-cuenta-nombre" required>
+                </div>
+                <div id="edit-div-credito" class="input-group hidden" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="input-group">
+                        <label>Cupo Total ($)</label>
+                        <input type="text" inputmode="numeric" id="edit-cuenta-cupo" placeholder="0" oninput="formatInput(this)">
+                    </div>
+                    <div class="input-group">
+                        <label>Fecha Límite de Pago</label>
+                        <input type="text" id="edit-cuenta-dia-pago" placeholder="Ej. 17 de cada mes">
+                    </div>
+                    <div class="input-group">
+                        <label>Periodo de Facturación / Corte</label>
+                        <input type="text" id="edit-cuenta-periodo-corte" placeholder="Ej. Entre 28 y 28 de cada mes">
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button type="button" onclick="cerrarModal('modal-editar-cuenta')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Cambios</button>
                 </div>
             </form>
         </div>
@@ -320,6 +391,66 @@
                 <div class="btn-row">
                     <button type="button" onclick="cerrarModal('modal-ejecutar-proyeccion')" class="btn-secondary">Cancelar</button>
                     <button type="submit" class="btn-primary" style="background: var(--success);">✔ Confirmar Hecho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO PRÉSTAMO -->
+    <div id="modal-prestamo" class="modal hidden">
+        <div class="modal-body">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">🤝 Registrar Préstamo</h3>
+            <p style="font-size: 0.75rem; color: var(--subtext);">Se registrará como un egreso automático en tu cuenta.</p>
+            <form id="form-prestamo" onsubmit="guardarPrestamo(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="input-group">
+                    <label>¿A quién le prestas?</label>
+                    <input type="text" id="prestamo-a-quien" required placeholder="Ej. Carlos, Mamá, Juan">
+                </div>
+                <div class="input-group">
+                    <label>Concepto / Motivo</label>
+                    <input type="text" id="prestamo-concepto" required placeholder="Ej. Almuerzo, Para pasajes, Emergencia">
+                </div>
+                <div class="input-group">
+                    <label>Monto a prestar ($)</label>
+                    <input type="text" inputmode="numeric" id="prestamo-monto" required placeholder="0" oninput="formatInput(this)">
+                </div>
+                <div class="input-group">
+                    <label>Cuenta de donde sale el dinero</label>
+                    <select id="prestamo-cuenta" required></select>
+                </div>
+                <div class="input-group">
+                    <label>Fecha a pagar (Opcional)</label>
+                    <input type="date" id="prestamo-fecha-pago">
+                </div>
+                <div class="btn-row">
+                    <button type="button" onclick="cerrarModal('modal-prestamo')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="background: #d97706;">Registrar Préstamo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL COBRAR PRÉSTAMO -->
+    <div id="modal-cobrar-prestamo" class="modal hidden">
+        <div class="modal-body">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">💰 Registrar Cobro de Préstamo</h3>
+            <p id="cobro-prestamo-resumen" style="font-size: 0.85rem; color: var(--subtext);"></p>
+            <form id="form-cobrar-prestamo" onsubmit="confirmarCobroPrestamo(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <input type="hidden" id="cobro-prestamo-id">
+                <input type="hidden" id="cobro-prestamo-monto">
+                <input type="hidden" id="cobro-prestamo-a-quien">
+                
+                <div class="input-group">
+                    <label>Fecha de Recepción del Dinero</label>
+                    <input type="date" id="cobro-fecha" required>
+                </div>
+                <div class="input-group">
+                    <label>Cuenta donde recibes el dinero</label>
+                    <select id="cobro-cuenta-destino" required></select>
+                </div>
+                <div class="btn-row">
+                    <button type="button" onclick="cerrarModal('modal-cobrar-prestamo')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="background: var(--success);">✔ Confirmar Cobro</button>
                 </div>
             </form>
         </div>
