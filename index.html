@@ -34,7 +34,7 @@
             </div>
         </section>
 
-        <!-- NUEVO RESUMEN PROYECTADO -->
+        <!-- RESUMEN PROYECTADO -->
         <section class="card" style="background: #f8fafc; border-color: #e2e8f0;">
             <div class="section-header" style="margin-bottom: 0.5rem;">
                 <h2 class="section-title" style="color: #0f172a;">🔮 Futuro (Tras Proyecciones)</h2>
@@ -56,6 +56,17 @@
             <button onclick="abrirModalTransaccion('egreso')" class="btn-action btn-egreso"><span>↑</span> - Egreso</button>
             <button onclick="abrirModalTransaccion('ahorro')" class="btn-action btn-bolsillo"><span>🔒</span> Bolsillo</button>
             <button onclick="abrirModalProyeccion()" class="btn-action btn-proyectado"><span>🔮</span> Proyectar</button>
+        </section>
+
+        <!-- NUEVA SECCIÓN: MOVIMIENTOS RECIENTES (SÓLO 5) -->
+        <section class="card">
+            <div class="section-header">
+                <h2 class="section-title">Últimos Movimientos</h2>
+                <button onclick="navegarA('/historial')" class="btn-link">Ver todos ➔</button>
+            </div>
+            <div id="lista-movimientos-recientes">
+                <p style="font-size: 0.8rem; color: var(--subtext);">Cargando movimientos recientes...</p>
+            </div>
         </section>
 
         <section class="card">
@@ -80,7 +91,7 @@
         </section>
     </main>
 
-    <!-- VISTA 2: MÓDULO DE MOVIMIENTOS EXCLUSIVO -->
+    <!-- VISTA 2: MÓDULO DE HISTORIAL COMPLETO Y FILTROS -->
     <main id="view-movimientos" class="container hidden">
         <section class="card" style="padding-bottom: 0.5rem;">
             <h2 class="section-title" style="margin-bottom: 1rem;">🔍 Filtro de Movimientos</h2>
@@ -120,10 +131,10 @@
 
     <!-- BARRA DE NAVEGACIÓN INFERIOR AWP -->
     <nav class="bottom-nav">
-        <button id="nav-dashboard" onclick="cambiarVista('dashboard')" class="nav-btn active">
+        <button id="nav-dashboard" onclick="navegarA('/')" class="nav-btn active">
             <span style="font-size: 1.25rem;">🏠</span> Inicio
         </button>
-        <button id="nav-movimientos" onclick="cambiarVista('movimientos')" class="nav-btn">
+        <button id="nav-movimientos" onclick="navegarA('/historial')" class="nav-btn">
             <span style="font-size: 1.25rem;">📋</span> Historial
         </button>
     </nav>
@@ -324,8 +335,6 @@
 
     <script src="app.js"></script>
     <script>
-        // Si el menú no cambiaba de página era por la caché de la PWA.
-        // Este script fuerza la actualización.
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').then(reg => {
                 reg.update();
