@@ -3,119 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas Personales</title>
-    <!-- 👇 ESTAS DOS LÍNEAS SON VITALES PARA EL DISEÑO Y LA BASE DE DATOS 👇 -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Mis Finanzas</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --subtext: #64748b;
+            --primary: #0f172a;
+            --success: #10b981;
+            --danger: #f43f5e;
+            --accent: #6366f1;
+            --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 3rem; }
+        .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem; sticky; top: 0; }
+        .container { max-width: 500px; margin: 0 auto; padding: 1rem; display: flex; flex-direction: column; gap: 1.25rem; }
+        .badge { background: #ecfdf5; color: #047857; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 9999px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card-dark { background: var(--primary); color: white; padding: 1rem; border-radius: 1rem; }
+        .card-green { background: var(--success); color: white; padding: 1rem; border-radius: 1rem; }
+        .val { font-size: 1.5rem; font-weight: 800; margin-top: 0.25rem; }
+        .sub { font-size: 0.75rem; opacity: 0.8; }
+        .btn-action { border: none; color: white; font-weight: 700; padding: 0.8rem; border-radius: 0.75rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-size: 0.85rem; }
+        .btn-ingreso { background: var(--success); }
+        .btn-egreso { background: var(--danger); }
+        .btn-bolsillo { background: var(--accent); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+        .section-title { font-size: 1rem; font-weight: 700; }
+        .btn-link { background: none; border: none; color: var(--accent); font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+        .item-row { padding: 0.75rem; background: #f1f5f9; border-radius: 0.75rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center; padding: 1rem; z-index: 100; }
+        .modal.hidden { display: none !important; }
+        .modal-body { background: white; width: 100%; max-width: 450px; border-radius: 1.25rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+        .input-group { display: flex; flex-direction: column; gap: 0.3rem; }
+        .input-group label { font-size: 0.7rem; font-weight: 700; color: var(--subtext); text-transform: uppercase; }
+        .input-group input, .input-group select { padding: 0.75rem; background: #f1f5f9; border: 1px solid var(--border); border-radius: 0.75rem; font-size: 1rem; outline: none; }
+        .btn-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+        .btn-secondary { width: 50%; padding: 0.75rem; background: #f1f5f9; border: none; border-radius: 0.75rem; font-weight: 600; color: var(--subtext); cursor: pointer; }
+        .btn-primary { width: 50%; padding: 0.75rem; background: var(--primary); border: none; border-radius: 0.75rem; font-weight: 600; color: white; cursor: pointer; }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen pb-12">
+<body>
 
     <!-- CONFIGURACIÓN SUPABASE -->
     <script>
-        // IMPORTANTE: Pon tus llaves aquí, manteniendo las comillas
-        const SUPABASE_URL = "TU_SUPABASE_URL_AQUI";
-        const SUPABASE_KEY = "TU_SUPABASE_ANON_KEY_AQUI";
+        const SUPABASE_URL = "https://fpweccrefuiznuugkngm.supabase.coI";
+        const SUPABASE_KEY = "sb_publishable_3YKhDoPtMQe3VRyOROt9xQ_ZjuqeT7u";
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     </script>
 
-    <!-- HEADER / DASHBOARD -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
-        <div class="max-w-xl mx-auto px-4 py-4 flex items-center justify-between">
-            <h1 class="text-xl font-bold tracking-tight text-slate-900">Mis Finanzas</h1>
-            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-full">En Vivo</span>
+    <header class="header">
+        <div style="max-width: 500px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+            <h1 style="font-size: 1.25rem; font-weight: 800;">Mis Finanzas</h1>
+            <span class="badge">En Vivo</span>
         </div>
     </header>
 
-    <main class="max-w-xl mx-auto px-4 mt-6 space-y-6">
+    <main class="container">
 
         <!-- RESUMEN DE SALDOS -->
-        <section class="grid grid-cols-2 gap-3">
-            <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm">
-                <p class="text-xs text-slate-400 font-medium">Disponible (Efectivo/Débito)</p>
-                <p id="total-disponible" class="text-2xl font-extrabold mt-1">$0</p>
+        <section class="grid-2">
+            <div class="card-dark">
+                <p class="sub">Disponible (Efectivo/Débito)</p>
+                <p id="total-disponible" class="val">$0</p>
             </div>
-            <div class="bg-emerald-600 text-white p-4 rounded-2xl shadow-sm">
-                <p class="text-xs text-emerald-100 font-medium">Ahorrado en Bolsillos</p>
-                <p id="total-ahorrado" class="text-2xl font-extrabold mt-1">$0</p>
+            <div class="card-green">
+                <p class="sub">Ahorrado en Bolsillos</p>
+                <p id="total-ahorrado" class="val">$0</p>
             </div>
         </section>
 
-        <!-- BOTONES DE ACCIÓN RÁPIDA (UX POCOS CLICKS) -->
-        <section class="grid grid-cols-3 gap-2">
-            <button onclick="abrirModal('ingreso')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-md transition flex flex-col items-center justify-center text-sm">
-                <span class="text-lg">↓</span> + Ingreso
+        <!-- BOTONES DE ACCIÓN RÁPIDA -->
+        <section class="grid-3">
+            <button onclick="abrirModal('ingreso')" class="btn-action btn-ingreso">
+                <span>↓</span> + Ingreso
             </button>
-            <button onclick="abrirModal('egreso')" class="bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-xl shadow-md transition flex flex-col items-center justify-center text-sm">
-                <span class="text-lg">↑</span> - Egreso
+            <button onclick="abrirModal('egreso')" class="btn-action btn-egreso">
+                <span>↑</span> - Egreso
             </button>
-            <button onclick="abrirModal('ahorro')" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-md transition flex flex-col items-center justify-center text-sm">
-                <span class="text-lg">🔒</span> Bolsillo
+            <button onclick="abrirModal('ahorro')" class="btn-action btn-bolsillo">
+                <span>🔒</span> Bolsillo
             </button>
         </section>
 
-        <!-- MODULO: BOLSILLOS DE AHORRO -->
-        <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-slate-900">Mis Bolsillos</h2>
-                <button onclick="crearBolsillo()" class="text-xs text-indigo-600 font-bold hover:underline">+ Nuevo Bolsillo</button>
+        <!-- BOLSILLOS -->
+        <section class="card">
+            <div class="section-header">
+                <h2 class="section-title">Mis Bolsillos</h2>
+                <button onclick="crearBolsillo()" class="btn-link">+ Nuevo Bolsillo</button>
             </div>
-            <div id="lista-bolsillos" class="space-y-3">
-                <p class="text-xs text-slate-400">No tienes bolsillos creados.</p>
-            </div>
-        </section>
-
-        <!-- MODULO: TARJETAS DE CRÉDITO Y CUENTAS -->
-        <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-slate-900">Cuentas y Tarjetas</h2>
-                <button onclick="crearCuenta()" class="text-xs text-indigo-600 font-bold hover:underline">+ Agregar Cuenta</button>
-            </div>
-            <div id="lista-cuentas" class="space-y-3">
-                <p class="text-xs text-slate-400">No hay cuentas o tarjetas registradas.</p>
+            <div id="lista-bolsillos">
+                <p style="font-size: 0.8rem; color: var(--subtext);">No tienes bolsillos creados.</p>
             </div>
         </section>
 
-        <!-- HISTORIAL RECIENTE -->
-        <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <h2 class="font-bold text-slate-900 mb-4">Movimientos Recientes</h2>
-            <div id="lista-transacciones" class="divide-y divide-slate-100">
-                <p class="text-xs text-slate-400 py-2">Sin movimientos.</p>
+        <!-- CUENTAS Y TARJETAS -->
+        <section class="card">
+            <div class="section-header">
+                <h2 class="section-title">Cuentas y Tarjetas</h2>
+                <button onclick="crearCuenta()" class="btn-link">+ Agregar Cuenta</button>
+            </div>
+            <div id="lista-cuentas">
+                <p style="font-size: 0.8rem; color: var(--subtext);">No hay cuentas o tarjetas registradas.</p>
+            </div>
+        </section>
+
+        <!-- MOVIMIENTOS RECIENTES -->
+        <section class="card">
+            <h2 class="section-title" style="margin-bottom: 0.75rem;">Movimientos Recientes</h2>
+            <div id="lista-transacciones">
+                <p style="font-size: 0.8rem; color: var(--subtext);">Sin movimientos.</p>
             </div>
         </section>
 
     </main>
 
     <!-- MODAL DE REGISTRO RÁPIDO -->
-    <div id="modal-transaccion" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-4 z-50">
-        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 id="modal-titulo" class="text-lg font-bold text-slate-900">Nuevo Movimiento</h3>
+    <div id="modal-transaccion" class="modal hidden">
+        <div class="modal-body">
+            <h3 id="modal-titulo" style="font-size: 1.1rem; font-weight: 700;">Nuevo Movimiento</h3>
             
-            <form id="form-transaccion" onsubmit="guardarTransaccion(event)" class="space-y-3">
+            <form id="form-transaccion" onsubmit="guardarTransaccion(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <input type="hidden" id="tx-tipo">
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase">Monto</label>
-                    <input type="number" id="tx-monto" required placeholder="0" class="w-full mt-1 p-3 bg-slate-100 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-slate-900">
+                <div class="input-group">
+                    <label>Monto</label>
+                    <input type="number" id="tx-monto" required placeholder="0">
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase">Concepto</label>
-                    <input type="text" id="tx-concepto" required placeholder="Ej. Mercado, Salario, Cine" class="w-full mt-1 p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-slate-900">
+                <div class="input-group">
+                    <label>Concepto</label>
+                    <input type="text" id="tx-concepto" required placeholder="Ej. Mercado, Salario, Cine">
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase">Cuenta / Medio de Pago</label>
-                    <select id="tx-cuenta" required class="w-full mt-1 p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-slate-900"></select>
+                <div class="input-group">
+                    <label>Cuenta / Medio de Pago</label>
+                    <select id="tx-cuenta" required></select>
                 </div>
 
-                <div id="div-bolsillo-select" class="hidden">
-                    <label class="block text-xs font-semibold text-slate-500 uppercase">Destino (Bolsillo)</label>
-                    <select id="tx-bolsillo" class="w-full mt-1 p-3 bg-slate-100 rounded-xl outline-none focus:ring-2 focus:ring-slate-900"></select>
+                <div id="div-bolsillo-select" class="input-group hidden">
+                    <label>Destino (Bolsillo)</label>
+                    <select id="tx-bolsillo"></select>
                 </div>
 
-                <div class="flex gap-2 pt-2">
-                    <button type="button" onclick="cerrarModal()" class="w-1/2 py-3 font-semibold text-slate-500 bg-slate-100 rounded-xl">Cancelar</button>
-                    <button type="submit" class="w-1/2 py-3 font-semibold text-white bg-slate-900 rounded-xl shadow-md">Guardar</button>
+                <div class="btn-row">
+                    <button type="button" onclick="cerrarModal()" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
                 </div>
             </form>
         </div>
@@ -144,16 +184,16 @@
 
         function renderizarCuentas() {
             const container = document.getElementById('lista-cuentas');
-            if (!cuentas.length) return container.innerHTML = '<p class="text-xs text-slate-400">Sin cuentas.</p>';
+            if (!cuentas.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin cuentas.</p>';
             
             container.innerHTML = cuentas.map(c => {
                 const esCredito = c.tipo === 'credito';
                 const cupoDisponible = esCredito ? (Number(c.cupo_total) - Number(c.saldo_actual)) : 0;
                 return `
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
+                    <div class="item-row">
                         <div>
-                            <p class="font-bold text-sm text-slate-800">${c.nombre} <span class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-normal uppercase">${c.tipo}</span></p>
-                            ${esCredito ? `<p class="text-xs text-slate-500">Deuda: $${c.saldo_actual} | Libre: <b class="text-emerald-600">$${cupoDisponible}</b></p>` : `<p class="text-xs text-slate-500">Saldo: $${c.saldo_actual}</p>`}
+                            <p style="font-weight: 700; font-size: 0.9rem;">${c.nombre} <span style="font-size: 0.65rem; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${c.tipo.toUpperCase()}</span></p>
+                            ${esCredito ? `<p style="font-size: 0.75rem; color: var(--subtext);">Deuda: $${c.saldo_actual} | Libre: <b style="color: var(--success);">$${cupoDisponible}</b></p>` : `<p style="font-size: 0.75rem; color: var(--subtext);">Saldo: $${c.saldo_actual}</p>`}
                         </div>
                     </div>
                 `;
@@ -162,13 +202,13 @@
 
         function renderizarBolsillos() {
             const container = document.getElementById('lista-bolsillos');
-            if (!bolsillos.length) return container.innerHTML = '<p class="text-xs text-slate-400">Sin bolsillos.</p>';
+            if (!bolsillos.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin bolsillos.</p>';
 
             container.innerHTML = bolsillos.map(b => `
-                <div class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 flex justify-between items-center">
+                <div class="item-row" style="background: #e0e7ff;">
                     <div>
-                        <p class="font-bold text-sm text-indigo-950">🎯 ${b.nombre}</p>
-                        <p class="text-xs text-indigo-600">Ahorrado: <b>$${b.saldo_actual}</b> de $${b.meta}</p>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: #3730a3;">🎯 ${b.nombre}</p>
+                        <p style="font-size: 0.75rem; color: #4338ca;">Ahorrado: <b>$${b.saldo_actual}</b> de $${b.meta}</p>
                     </div>
                 </div>
             `).join('');
@@ -176,19 +216,19 @@
 
         function renderizarTransacciones(txs) {
             const container = document.getElementById('lista-transacciones');
-            if (!txs.length) return container.innerHTML = '<p class="text-xs text-slate-400 py-2">Sin movimientos.</p>';
+            if (!txs.length) return container.innerHTML = '<p style="font-size: 0.8rem; color: var(--subtext);">Sin movimientos.</p>';
 
             container.innerHTML = txs.map(t => {
                 const esIngreso = t.tipo === 'ingreso';
-                const color = esIngreso ? 'text-emerald-600' : 'text-rose-600';
+                const color = esIngreso ? 'var(--success)' : 'var(--danger)';
                 const signo = esIngreso ? '+' : '-';
                 return `
-                    <div class="py-2.5 flex justify-between items-center text-sm">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;">
                         <div>
-                            <p class="font-semibold text-slate-800">${t.concepto}</p>
-                            <p class="text-xs text-slate-400">${t.cuentas?.nombre || 'Cuenta'} ${t.bolsillos ? `➔ ${t.bolsillos.nombre}` : ''}</p>
+                            <p style="font-weight: 600;">${t.concepto}</p>
+                            <p style="font-size: 0.7rem; color: var(--subtext);">${t.cuentas?.nombre || 'Cuenta'} ${t.bolsillos ? `➔ ${t.bolsillos.nombre}` : ''}</p>
                         </div>
-                        <span class="font-bold ${color}">${signo}$${t.monto}</span>
+                        <span style="font-weight: 700; color: ${color};">${signo}$${t.monto}</span>
                     </div>
                 `;
             }).join('');
@@ -235,7 +275,6 @@
 
             await db.from('transacciones').insert([{ tipo, monto, concepto, cuenta_id, bolsillo_id }]);
 
-            // Actualizar saldos
             const cuenta = cuentas.find(c => c.id === cuenta_id);
             if (tipo === 'ingreso') {
                 await db.from('cuentas').update({ saldo_actual: Number(cuenta.saldo_actual) + monto }).eq('id', cuenta_id);
