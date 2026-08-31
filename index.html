@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Finanzas</title>
     
-    <!-- CONFIGURACIÓN PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845731.png">
@@ -22,7 +21,8 @@
         </div>
     </header>
 
-    <main class="container">
+    <!-- VISTA 1: DASHBOARD PRINCIPAL -->
+    <main id="view-dashboard" class="container">
         <!-- RESUMEN REAL -->
         <section class="grid-2">
             <div class="card-dark">
@@ -98,7 +98,7 @@
             </div>
         </section>
 
-        <!-- MOVIMIENTOS RECIENTES -->
+        <!-- MOVIMIENTOS RECIENTES (Últimos 5) -->
         <section class="card">
             <h2 class="section-title" style="margin-bottom: 0.75rem;">Movimientos Recientes</h2>
             <div id="lista-transacciones">
@@ -106,6 +106,61 @@
             </div>
         </section>
     </main>
+
+    <!-- VISTA 2: MÓDULO DE MOVIMIENTOS COMPLETO -->
+    <main id="view-movimientos" class="container hidden">
+        <section class="card">
+            <h2 class="section-title" style="margin-bottom: 1rem;">🔍 Filtro de Movimientos</h2>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="input-group">
+                    <label>Buscar por concepto</label>
+                    <input type="text" id="filter-search" placeholder="Ej. Mercado, Salario..." oninput="filtrarMovimientos()">
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Desde</label>
+                        <input type="date" id="filter-desde" onchange="filtrarMovimientos()">
+                    </div>
+                    <div class="input-group">
+                        <label>Hasta</label>
+                        <input type="date" id="filter-hasta" onchange="filtrarMovimientos()">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Tipo</label>
+                        <select id="filter-tipo" onchange="filtrarMovimientos()">
+                            <option value="">Todos</option>
+                            <option value="ingreso">Ingresos</option>
+                            <option value="egreso">Egresos</option>
+                            <option value="ahorro">Bolsillos</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Cuenta</label>
+                        <select id="filter-cuenta" onchange="filtrarMovimientos()"></select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="section-title" style="margin-bottom: 0.75rem;">Historial de Movimientos</h2>
+            <div id="lista-movimientos-completa">
+                <p style="font-size: 0.8rem; color: var(--subtext);">Cargando...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- BARRA DE NAVEGACIÓN INFERIOR AWP -->
+    <nav class="bottom-nav">
+        <button id="nav-dashboard" onclick="cambiarVista('dashboard')" class="nav-btn active">
+            <span style="font-size: 1.1rem;">🏠</span> Panel
+        </button>
+        <button id="nav-movimientos" onclick="cambiarVista('movimientos')" class="nav-btn">
+            <span style="font-size: 1.1rem;">📋</span> Movimientos
+        </button>
+    </nav>
 
     <!-- MODALES -->
     <div id="modal-transaccion" class="modal hidden">
@@ -179,12 +234,34 @@
                     <input type="text" id="bolsillo-nombre" required placeholder="Ej. Viaje, Emergencias">
                 </div>
                 <div class="input-group">
-                    <label>Meta de Ahorro ($)</label>
-                    <input type="text" inputmode="numeric" id="bolsillo-meta" required placeholder="0" oninput="formatInput(this)">
+                    <label>Saldo Inicial ($) - Opcional</label>
+                    <input type="text" inputmode="numeric" id="bolsillo-saldo" placeholder="0" oninput="formatInput(this)">
+                </div>
+                <div class="input-group">
+                    <label>Meta de Ahorro ($) - Opcional</label>
+                    <input type="text" inputmode="numeric" id="bolsillo-meta" placeholder="Sin meta fija" oninput="formatInput(this)">
                 </div>
                 <div class="btn-row">
                     <button type="button" onclick="cerrarModal('modal-bolsillo')" class="btn-secondary">Cancelar</button>
                     <button type="submit" class="btn-primary">Crear</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-editar-bolsillo" class="modal hidden">
+        <div class="modal-body">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">Editar Saldo del Bolsillo</h3>
+            <p id="edit-bolsillo-nombre" style="font-size: 0.85rem; color: var(--subtext);"></p>
+            <form id="form-editar-bolsillo" onsubmit="confirmarEditarBolsillo(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <input type="hidden" id="edit-bolsillo-id">
+                <div class="input-group">
+                    <label>Nuevo Saldo ($)</label>
+                    <input type="text" inputmode="numeric" id="edit-bolsillo-saldo" required placeholder="0" oninput="formatInput(this)">
+                </div>
+                <div class="btn-row">
+                    <button type="button" onclick="cerrarModal('modal-editar-bolsillo')" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Saldo</button>
                 </div>
             </form>
         </div>
